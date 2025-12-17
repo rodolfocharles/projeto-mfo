@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt    DateTime?      @updatedAt
+  simulations Simulation[]
+  allocations  Allocation[]
+  snapshots   Snapshot[]
+  movements   Movement[]
+  insurances  Insurance[]
+
+  @@map("clients")
+}
+
+model Simulation {
+  id         String   @id @default(uuid())
+  clientId   String
+  name       String
+  version    Int      @default(1)
+  startDate  DateTime
+  realRate   Float
+  inflation  Float
+  lifeStatus String   @default("NORMAL")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+  client  Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  results ProjectionResult[]
+
+  
+  @@map("simulations")
+}
+
+
+model Snapshot {
+  id          String    @id @default(uuid())
+  clientId    String    
+  date        DateTime
+  totalValue  Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  allocationSnapshots AllocationSnapshot[] 
+
+  @@map("snapshots")
+}
+
+model Allocation {
+  id           String    @id @default(uuid())
+  clientId     String    
+  name         String
+  value        Float
+  startDate    DateTime  @default(now())
+  contribution Float     @default(0) // Contribuição mensal
+  rate         Float     @default(0) // Taxa de retorno anual esperada
+  isTaxable    Boolean   @default(false) // Se a alocação é tributável
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime? @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  snapshots AllocationSnapshot[]
+
+  @@map("allocations")
+}
+
+model Movement {
+  id          String    @id @default(uuid())
+  clientId    String
+  name        String
+  type        String    // INCOME, EXPENSE, INVESTMENT
+  value       Float
+  startDate   DateTime
+  endDate     DateTime?
+  isRecurrent Boolean   @default(false)  
+  createdAt   DateTime  @default(now())
+
+  updatedAt   DateTime? @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("movements")
+}
+
+
+model Insurance {
+  id             String   @id @default(uuid())
+  clientId       String
+  type           String
+  name           String
+  startDate      DateTime
+  durationMonths Int
+  monthlyPremium Float
+  insuredAmount  Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime? @updatedAt
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("insurances")
+}
+
+model AllocationSnapshot {
+  id            String    @id @default(uuid())
+  snapshotId    String
+  allocationId  String
+  valueAtSnapshot Float
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+  snapshot    Snapshot   @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  allocation  Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+
+  @@map("allocation_snapshots")
+}
+
+model ProjectionResult {
+  id           String   @id @default(uuid())
+  simulationId String
+  period       DateTime
+  financial    Float
+  immobilized  Float
+  total        Float
+  totalNoIns   Float
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime? @updatedAt
+  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+
+  @@unique([simulationId, period])
+  @@map("projection_results")
+}

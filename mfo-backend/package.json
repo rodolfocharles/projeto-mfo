@@ -1,0 +1,34 @@
+{
+  "name": "mfo-backend",
+  "version": "1.0.0",
+  "description": "\"Multi Family Office - Backend API - Ferramenta interna de analise financeiro\"",
+  "main": "index.js",
+  "author": "Rodolfo Charles",
+  "license": "ISC",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "keywords": [
+    "fastify",
+    "typescript",
+    "prisma",
+    "mfo"
+  ],
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/swagger": "^9.6.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@prisma/client": "^5.22.0",
+    "fastify": "^5.6.2",
+    "fastify-type-provider-zod": "^6.1.0",
+    "prisma": "^5.22.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
