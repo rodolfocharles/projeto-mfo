@@ -1,3 +1,8 @@
+enum AllocationType {
+  FINANCIAL
+  IMMOBILIZED
+}
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,6 +16,7 @@ model Client {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
+  password  String   @default("temp_password_hash")
   createdAt DateTime @default(now())
   updatedAt    DateTime?      @updatedAt
   simulations Simulation[]
@@ -58,6 +64,7 @@ model Allocation {
   id           String    @id @default(uuid())
   clientId     String    
   name         String
+  type         AllocationType @default(FINANCIAL)
   value        Float
   startDate    DateTime  @default(now())
   contribution Float     @default(0) // Contribuição mensal
@@ -92,19 +99,22 @@ model Movement {
 
 
 model Insurance {
-  id             String   @id @default(uuid())
-  clientId       String
-  type           String
-  name           String
-  startDate      DateTime
-  durationMonths Int
-  monthlyPremium Float
-  insuredAmount  Float
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime? @updatedAt
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id])
+  name        String    // Nome do seguro (ex: "Seguro de Vida Principal")
+  type        InsuranceType // Tipo de seguro (VIDA, INVALIDEZ)
+  coverage    Float     // Valor da cobertura (ex: 1.000.000)
+  premium     Float     // Valor do prêmio mensal (ex: 500)
+  startDate   DateTime  // Data de início do seguro
+  endDate     DateTime? // Data de término do seguro (opcional)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
 
-  @@map("insurances")
+enum InsuranceType {
+  LIFE      // Seguro de Vida
+  DISABILITY // Seguro de Invalidez
 }
 
 model AllocationSnapshot {

@@ -1,0 +1,20 @@
+# Ignorar arquivos do frontend (Next.js)
+/mfo-frontend/.next/
+/mfo-frontend/node_modules/
+/mfo-frontend/.env.local
+/mfo-frontend/npm-debug.log*
+
+# Ignorar arquivos do backend (Fastify)
+/mfo-backend/node_modules/
+/mfo-backend/dist/ # Se você compila o TypeScript para JavaScript em uma pasta 'dist'
+/mfo-backend/.env
+/mfo-backend/npm-debug.log*
+
+# Outros arquivos comuns a ignorar na raiz do repositório
+.DS_Store
+.vscode/
+*.log
+node_modules # Para node_modules na raiz, se houver
+.git
+.vscode
+.env.local # Para .env.local na raiz, se houver

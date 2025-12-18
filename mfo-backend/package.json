@@ -7,8 +7,10 @@
   "license": "ISC",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "migrate:deploy": "prisma migrate deploy"
   },
   "keywords": [
     "fastify",

@@ -22,30 +22,43 @@ export class AllocationSnapshotController {
         })
       }
 
-      //Validar se todas as allocationIds fornecidas existem
-      const existingAllocationIds = await prisma.allocation.findMany({
+      const clientAllocations = await prisma.allocation.findMany({
         where: {
-          id: {
-            in: allocations.map(a => a.allocationId),
-          },
-          clientId: clientId, 
+          clientId: clientId,
         },
-        select: { id: true },
-      })
+      });
 
-      const foundIds = new Set(existingAllocationIds.map(a => a.id))
-      const missingIds = allocations.filter(a => !foundIds.has(a.allocationId))
+      const totalValue = clientAllocations.reduce((sum, alloc) => sum + alloc.value, 0); // Use alloc.value do DB!
 
-      if (missingIds.length > 0) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: 'Bad Request',
-          message: `Uma ou mais alocações não foram encontradas ou não pertencem ao cliente.: ${missingIds.map(m => m.allocationId).join(', ')}`,
-        })
-      }
+      const allocationSnapshotsData = clientAllocations.map(alloc => ({
+        allocationId: alloc.id, // Use o ID da alocação atual
+        valueAtSnapshot: alloc.value, // Use o valor atual da alocação
+      }));
 
-      //Calcular o totalValue do Snapshot
-      const totalValue = allocations.reduce((sum, alloc) => sum + alloc.valueAtSnapshot, 0)
+      // //Validar se todas as allocationIds fornecidas existem
+      // const existingAllocationIds = await prisma.allocation.findMany({
+      //   where: {
+      //     id: {
+      //       in: allocations.map(a => a.allocationId),
+      //     },
+      //     clientId: clientId, 
+      //   },
+      //   select: { id: true },
+      // })
+
+      // const foundIds = new Set(existingAllocationIds.map(a => a.id))
+      // const missingIds = allocations.filter(a => !foundIds.has(a.allocationId))
+
+      // if (missingIds.length > 0) {
+      //   return reply.status(400).send({
+      //     statusCode: 400,
+      //     error: 'Bad Request',
+      //     message: `Uma ou mais alocações não foram encontradas ou não pertencem ao cliente.: ${missingIds.map(m => m.allocationId).join(', ')}`,
+      //   })
+      // }
+
+      // //Calcular o totalValue do Snapshot
+      // const totalValue = allocations.reduce((sum, alloc) => sum + alloc.valueAtSnapshot, 0)
 
       //Criar o Snapshot principal
       const newSnapshot = await prisma.snapshot.create({
@@ -55,10 +68,7 @@ export class AllocationSnapshotController {
           totalValue,
           allocationSnapshots: {
             createMany: {
-              data: allocations.map(alloc => ({
-                allocationId: alloc.allocationId,
-                valueAtSnapshot: alloc.valueAtSnapshot,
-              })),
+              data: allocationSnapshotsData,
             },
           },
         },
@@ -67,15 +77,13 @@ export class AllocationSnapshotController {
         },
       })
 
-      // REMOVER A TRANSFORMAÇÃO MANUAL AQUI
-      // O schema de resposta (FullSnapshotResponseSchema) já fará a transformação de Date para string.
-      const responseData = {
-        ...newSnapshot,
-        allocations: newSnapshot.allocationSnapshots, // Renomear para 'allocations' para corresponder ao schema
-      }
-      delete (responseData as any).allocationSnapshots; // Remover a propriedade original
+      // const responseData = {
+      //   ...newSnapshot,
+      //   allocations: newSnapshot.allocationSnapshots, // Renomear para 'allocations' para corresponder ao schema
+      // }
+      // delete (responseData as any).allocationSnapshots; // Remover a propriedade original
+      return reply.status(201).send(newSnapshot)
 
-      return reply.status(201).send(responseData)
     } catch (error) {
       console.error('Error creating allocation snapshot:', error)
       return reply.status(500).send({

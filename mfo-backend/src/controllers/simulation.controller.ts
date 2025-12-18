@@ -297,7 +297,7 @@ export class SimulationController {
                   orderBy: { date: 'desc' },
                   take: 1,
                   include: {
-                    allocations: true,  
+                    allocationSnapshots: true,  
                   },
                 },
               },
@@ -314,7 +314,7 @@ export class SimulationController {
                   orderBy: { date: 'desc' },
                   take: 1,
                   include: {
-                    allocations: true,  
+                    allocationSnapshots: true,  
                   },
                 },
               },
@@ -332,15 +332,20 @@ export class SimulationController {
       }
 
       const months = query.months ? parseInt(query.months) : 360
-
       const projection1 = this.calculateProjection(simulation1, months)
       const projection2 = this.calculateProjection(simulation2, months)
 
       const comparison = projection1.map((p1, index) => {
         const p2 = projection2[index]
+        if (!p2) {
+          // Isso pode acontecer se as projeções tiverem tamanhos diferentes
+          // Você pode logar um aviso ou retornar um valor padrão/nulo
+          console.warn(`Projection 2 item not found at index ${index}. Skipping comparison for this month.`);
+          return null; // Retorna null para ser filtrado depois
+        }
         return {
           month: p1.month,
-          date: p1.date,
+          date: p1.period,
           simulation1: {
             balance: p1.balance,
             income: p1.income,
@@ -357,7 +362,7 @@ export class SimulationController {
             expense: Math.round((p1.expense - p2.expense) * 100) / 100,
           },
         }
-      })
+      }).filter(Boolean); // Filtra quaisquer entradas nulas que possam ter sido retornadas
 
       return reply.send({
         simulation1: {
@@ -401,6 +406,9 @@ export class SimulationController {
               snapshots: {
                 orderBy: { date: 'desc' },
                 take: 1,
+                include: {
+                  allocationSnapshots: true, 
+                },
               },
             },
           },
@@ -439,11 +447,10 @@ export class SimulationController {
     // Pegar patrimônio inicial (última alocação)
     if (simulation.client.snapshots && simulation.client.snapshots.length > 0) {
       const lastSnapshot = simulation.client.snapshots[0]
-
-      if (lastSnapshot.items) { 
-      balance = lastSnapshot.items.reduce((sum: number, item: any) => {
-        return sum + item.value
-      }, 0)
+      if (lastSnapshot.allocationSnapshots) { 
+        balance = lastSnapshot.allocationSnapshots.reduce((sum: number, item: any) => {
+          return sum + item.valueAtSnapshot;
+        }, 0)
     }
     }
 
@@ -481,7 +488,7 @@ export class SimulationController {
 
       projection.push({
         month,
-        date: currentDate.toISOString(),
+        period: currentDate.toISOString(),
         balance: Math.round(balance * 100) / 100,
         income: Math.round(monthlyIncome * 100) / 100,
         expense: Math.round(monthlyExpense * 100) / 100,

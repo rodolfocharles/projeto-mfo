@@ -37,7 +37,7 @@ export async function simulationRoutes(app: FastifyInstance) {
   )
 
   //LISTAR TODAS AS SIMULAÇÕES POR CLIENTE
-  server.get('/simulations/client/:id', {
+  server.get('/simulations/clients/:id', {
     schema: {
       tags: ['Simulations'],
       summary: 'Lista todas as simulações',

@@ -205,9 +205,7 @@ export class MovementController {
     }
   }
 
-  // ============================================
   // LIST BY TYPE - Filtrar por tipo
-  // ============================================
   async listByType(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { clientId, type } = req.params as { clientId: string; type: string }
@@ -243,9 +241,7 @@ export class MovementController {
     }
   }
 
-  // ============================================
   // GET SUMMARY - Resumo de movimentos
-  // ============================================
   async getSummary(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }

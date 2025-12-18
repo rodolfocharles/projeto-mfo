@@ -2,9 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import { prisma } from '../db/prisma'
 
 export class AllocationController {
-  // ============================================
   // CREATE - Criar nova alocação
-  // ============================================
   async create(req: FastifyRequest, reply: FastifyReply) {
     try {
       const body = req.body as any
@@ -45,13 +43,15 @@ export class AllocationController {
     }
   }
 
-  // ============================================
   // LIST BY CLIENT - Listar alocações de um cliente
-  // ============================================
   async listByClient(req: FastifyRequest, reply: FastifyReply) {
+    
     try {
-      const { id } = req.params as { id: string }
 
+      console.log('*** REQUISIÇÃO CHEGOU AO listByClient! ***'); // <--- ADICIONE ESTA LINHA
+      console.log('Parâmetros recebidos:', req.params); // <--- E ESTA PARA VER OS PARÂMETROS
+
+      const { id } = req.params as { id: string }
       const client = await prisma.client.findUnique({
         where: { id },
       })
@@ -80,9 +80,7 @@ export class AllocationController {
     }
   }
 
-  // ============================================
   // GET BY ID - Buscar alocação por ID
-  // ============================================
   async getById(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
@@ -110,9 +108,7 @@ export class AllocationController {
     }
   }
 
-  // ============================================
   // UPDATE - Atualizar alocação
-  // ============================================
   async update(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
@@ -156,9 +152,7 @@ export class AllocationController {
     }
   }
 
-  // ============================================
   // DELETE - Deletar alocação
-  // ============================================
   async delete(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
@@ -190,9 +184,7 @@ export class AllocationController {
     }
   }
 
-  // ============================================
   // GET SUMMARY - Resumo de alocações por cliente
-  // ============================================
   async getSummary(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }

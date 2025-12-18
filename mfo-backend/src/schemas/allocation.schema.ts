@@ -4,12 +4,14 @@ import {
   DateTimeSchema,
   PositiveNumberSchema,
   ErrorResponseSchema,
+  AllocationTypeEnum,
 } from './common.schema'
 
 // SCHEMAS DE REQUEST
 export const CreateAllocationSchema = z.object({
   clientId: UUIDSchema.describe('ID do cliente ao qual a alocação pertence'),
   name: z.string().min(1).describe('Nome da alocação (ex: Poupança, Tesouro Direto, Ações)'),
+  type: AllocationTypeEnum.describe('Tipo da alocação (FINANCIAL, IMMOBILIZED)'),
   value: PositiveNumberSchema.describe('Valor atual da alocação'),
   startDate: DateTimeSchema.describe('Data de início da alocação'),
   contribution: z.number().min(0).optional().describe('Valor de contribuição mensal (opcional)'),
@@ -20,6 +22,7 @@ export const CreateAllocationSchema = z.object({
 
 export const UpdateAllocationSchema = z.object({
   name: z.string().min(1).optional().describe('Novo nome da alocação'),
+  type: AllocationTypeEnum.optional().describe('Novo tipo da alocação (FINANCIAL, IMMOBILIZED)'),
   value: PositiveNumberSchema.optional().describe('Novo valor atual da alocação'),
   startDate: DateTimeSchema.optional().describe('Nova data de início da alocação'),
   contribution: z.number().min(0).optional().describe('Novo valor de contribuição mensal'),
@@ -30,10 +33,14 @@ export const UpdateAllocationSchema = z.object({
 export const AllocationParamsSchema = z.object({
   id: UUIDSchema.describe('ID da alocação'),
 })
+//FUNCIONA SEM O DOCKER
+// export const ClientParamsSchema = z.object({
+//   id: UUIDSchema.describe('ID do cliente'),
+// })
 
 export const ClientParamsSchema = z.object({
-  id: UUIDSchema.describe('ID do cliente'),
-})
+  id: z.string().uuid(), // <--- DEVE SER EXATAMENTE ASSIM!
+});
 
 // SCHEMAS DE RESPOSTA
 
@@ -42,6 +49,7 @@ export const PrismaAllocationSchema = z.object({
   id: UUIDSchema,
   clientId: UUIDSchema,
   name: z.string(),
+  type: AllocationTypeEnum,
   value: z.number(),
   startDate: z.date(), // Prisma retorna Date
   contribution: z.number(),

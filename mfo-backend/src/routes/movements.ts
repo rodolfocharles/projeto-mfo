@@ -37,7 +37,7 @@ export async function movementRoutes(app: FastifyInstance) {
 
   //LISTAR POR CLIENTE
   server.get(
-    '/movements/client/:id',
+    '/movements/clients/:id',
     {
       schema: {
         tags: ['Movements'],
