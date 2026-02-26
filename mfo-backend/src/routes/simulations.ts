@@ -19,6 +19,27 @@ export async function simulationRoutes(app: FastifyInstance) {
 
   const server = app.withTypeProvider<ZodTypeProvider>()
 
+   //COMPARAR (ANTES de /:id)
+  server.get('/simulations/compare',
+    {
+      schema: {
+        tags: ['Simulations'],
+        summary: 'Comparar duas simulações',
+        querystring: z.object({
+          id1: UUIDSchema,
+          id2: UUIDSchema,
+          months: z.string().optional(),
+        }),
+        response: {
+          200: z.any(),
+          400: ErrorResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    controller.compare.bind(controller)
+  )
+
   //simulations - CRIAR SIMULAÇÃO
   server.post('/simulations',
     {
@@ -65,6 +86,37 @@ export async function simulationRoutes(app: FastifyInstance) {
   controller.getById.bind(controller)
   )
 
+  //VER PROJEÇÃO
+  server.get('/simulations/:id/projection', {
+    schema: {
+      tags: ['Simulations'],
+      summary: 'Busca os resultados mensais da projeção para uma simulação específica.',
+      params: SimulationParamsSchema,
+      response: {
+        200: ProjectionResponseSchema, 
+        404: ErrorResponseSchema, // Se a simulação ou a projeção não for encontrada
+      },
+    },
+  }, 
+  controller.getProjection.bind(controller))
+
+  //CRIAR VERSÃO DE SIMULAÇÂO
+  server.post('/simulations/:id/versions',
+    {
+      schema: {
+        tags: ['Simulations'],
+        summary: 'Criar nova versão da simulação',
+        params: SimulationParamsSchema,
+        body: UpdateSimulationSchema,
+        response: {
+          201: SimulationResponseSchema,
+          404: ErrorResponseSchema,
+        },
+      },
+    },
+    controller.createVersion.bind(controller)
+  )
+
   //ATUALIZAR SIMULAÇÃO
   server.put('/simulations/:id', {
     schema: {
@@ -93,56 +145,5 @@ export async function simulationRoutes(app: FastifyInstance) {
       },
     },
   }, controller.delete.bind(controller))
-
-  //CRIAR VERSÃO DE SIMULAÇÂO
-  server.post('/simulations/:id/versions',
-    {
-      schema: {
-        tags: ['Simulations'],
-        summary: 'Criar nova versão da simulação',
-        params: SimulationParamsSchema,
-        body: UpdateSimulationSchema,
-        response: {
-          201: SimulationResponseSchema,
-          404: ErrorResponseSchema,
-        },
-      },
-    },
-    controller.createVersion.bind(controller)
-  )
-
-  //VER PROJEÇÃO
-  server.get('/simulations/:id/projection', {
-    schema: {
-      tags: ['Simulations'],
-      summary: 'Busca os resultados mensais da projeção para uma simulação específica.',
-      params: SimulationParamsSchema,
-      response: {
-        200: ProjectionResponseSchema, 
-        404: ErrorResponseSchema, // Se a simulação ou a projeção não for encontrada
-      },
-    },
-  }, 
-  controller.getProjection.bind(controller))
-
-  //COMPARAR (ANTES de /:id)
-  server.get('/simulations/compare',
-    {
-      schema: {
-        tags: ['Simulations'],
-        summary: 'Comparar duas simulações',
-        querystring: z.object({
-          id1: UUIDSchema,
-          id2: UUIDSchema,
-          months: z.string().optional(),
-        }),
-        response: {
-          200: z.any(),
-          400: ErrorResponseSchema,
-          404: ErrorResponseSchema,
-        },
-      },
-    },
-    controller.compare.bind(controller)
-  )
+ 
 }

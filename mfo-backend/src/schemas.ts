@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ScenarioType } from '@prisma/client';
 
 // Client
 export const createClientSchema = z.object({
@@ -22,6 +23,22 @@ export const updateSimulationSchema = z.object({
   inflation: z.number().optional(),
   lifeStatus: z.enum(['NORMAL', 'DECEASED', 'DISABLED']).optional(),
 })
+
+// Schemas para Query Params de Projeção
+export const ProjectionQuerySchema = z.object({
+  months: z.string().transform(Number).optional(), // Número de meses para projetar
+  scenario: z.nativeEnum(ScenarioType).optional(), // Cenário da projeção
+  eventMonth: z.string().transform(Number).optional(), // Mês de um evento específico (ex: aposentadoria)
+});
+
+// Schemas para Query Params de Comparação de Simulações
+export const CompareSimulationsQuerySchema = z.object({
+  id1: z.string().uuid(), // ID da primeira simulação
+  id2: z.string().uuid(), // ID da segunda simulação
+  months: z.string().transform(Number).optional(), // Número de meses para projetar
+  scenario: z.nativeEnum(ScenarioType).optional(), // Cenário da projeção
+  eventMonth: z.string().transform(Number).optional(), // Mês de um evento específico
+});
 
 // Snapshot
 export const createSnapshotSchema = z.object({

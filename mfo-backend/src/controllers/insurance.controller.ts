@@ -13,13 +13,11 @@ export class InsuranceController {
   // ============================================
   async create(req: FastifyRequest, reply: FastifyReply) {
     try {
-      // O body já é validado pelo ZodTypeProvider e tipado pelo schema da rota
-      const { clientId, type, name, startDate, durationMonths, monthlyPremium, insuredAmount } =
-        req.body as CreateInsuranceSchema
+      const body = req.body as any
 
-      // 1. Validar se o cliente existe
+      // Validar se o cliente existe
       const client = await prisma.client.findUnique({
-        where: { id: clientId },
+        where: { id: body.clientId },
       })
 
       if (!client) {
@@ -30,20 +28,59 @@ export class InsuranceController {
         })
       }
 
-      // 2. Criar o seguro no Prisma
-      const newInsurance = await prisma.insurance.create({
-        data: {
-          clientId,
-          type,
-          name,
-          startDate: new Date(startDate), // Converter string ISO para Date para o Prisma
-          durationMonths,
-          monthlyPremium,
-          insuredAmount,
-        },
-      })
+      // ✅ Preparar dados base
+      const data: any = {
+        clientId: body.clientId,
+        type: body.type,
+        name: body.name,
+        startDate: new Date(body.startDate),
+      }
 
-      // O FastifyTypeProviderZod usará o InsuranceResponseSchema para serializar a resposta
+      // ✅ DETECTAR FORMATO E PREENCHER CAMPOS OBRIGATÓRIOS
+
+      // Se veio formato NOVO (coverage + premium)
+      if (body.coverage !== undefined && body.premium !== undefined) {
+        data.coverage = body.coverage
+        data.premium = body.premium
+        if (body.endDate !== undefined) {
+          data.endDate = body.endDate ? new Date(body.endDate) : null
+        }
+        // Preencher campos antigos também (para compatibilidade)
+        data.monthlyPremium = body.premium
+        data.insuredAmount = body.coverage
+      }
+
+      // Se veio formato ANTIGO (durationMonths + monthlyPremium + insuredAmount)
+      else if (body.durationMonths !== undefined && 
+              body.monthlyPremium !== undefined && 
+              body.insuredAmount !== undefined) {
+
+        data.durationMonths = body.durationMonths
+        data.monthlyPremium = body.monthlyPremium
+        data.insuredAmount = body.insuredAmount
+
+        // ✅ PREENCHER CAMPOS OBRIGATÓRIOS (coverage e premium)
+        data.coverage = body.insuredAmount
+        data.premium = body.monthlyPremium
+
+        // Calcular endDate baseado em durationMonths
+        const endDate = new Date(body.startDate)
+        endDate.setMonth(endDate.getMonth() + body.durationMonths)
+        data.endDate = endDate
+      }
+
+      // Se não veio nenhum formato válido
+      else {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'Deve fornecer (coverage + premium) OU (durationMonths + monthlyPremium + insuredAmount)',
+        })
+      }
+
+      // Criar o seguro
+      const newInsurance = await prisma.insurance.create({ data })
+
       return reply.status(201).send(newInsurance)
     } catch (error) {
       console.error('Error creating insurance:', error)
@@ -54,7 +91,6 @@ export class InsuranceController {
       })
     }
   }
-
   // ============================================
   // LIST BY CLIENT - Listar todos os Seguros de um cliente
   // ============================================

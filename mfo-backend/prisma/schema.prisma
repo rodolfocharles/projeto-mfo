@@ -1,7 +1,5 @@
-enum AllocationType {
-  FINANCIAL
-  IMMOBILIZED
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -12,15 +10,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ENUMS
+
+enum AllocationType {
+  FINANCIAL
+  IMMOBILIZED
+}
+
+enum InsuranceType {
+  LIFE
+  AUTO
+  HOME
+  HEALTH
+  TRAVEL
+  DISABILITY
+  OTHER
+}
+
+enum MovementType {
+  INCOME
+  EXPENSE
+  INVESTMENT
+  WITHDRAWAL
+}
+
+enum Frequency {
+  MONTHLY
+  YEARLY
+  ONE_TIME
+}
+
+enum LifeStatus {
+  NORMAL
+  DISABLED
+  DECEASED
+}
+
+enum ScenarioType {
+  CURRENT
+  CONSERVATIVE
+  MODERATE
+  AGGRESSIVE
+  CUSTOM
+}
+
+// MODELS
+
 model Client {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String   @default("temp_password_hash")
-  createdAt DateTime @default(now())
-  updatedAt    DateTime?      @updatedAt
+  id          String      @id @default(uuid())
+  name        String
+  email       String      @unique
+  password    String      @default("temp_password_hash")
+  birthDate   DateTime?
+  lifeStatus  LifeStatus  @default(NORMAL)
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime?   @updatedAt
+
   simulations Simulation[]
-  allocations  Allocation[]
+  allocations Allocation[]
   snapshots   Snapshot[]
   movements   Movement[]
   insurances  Insurance[]
@@ -29,92 +77,126 @@ model Client {
 }
 
 model Simulation {
-  id         String   @id @default(uuid())
-  clientId   String
-  name       String
-  version    Int      @default(1)
-  startDate  DateTime
-  realRate   Float
-  inflation  Float
-  lifeStatus String   @default("NORMAL")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime? @updatedAt
-  client  Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  results ProjectionResult[]
+  id            String       @id @default(uuid())
+  clientId      String
+  snapshotId    String?
 
-  
+  name          String
+  version       Int          @default(1)
+  scenario      ScenarioType @default(CUSTOM)
+
+  startDate     DateTime
+  endDate       DateTime?
+  retirementAge Int?
+
+  realRate      Float
+  inflation     Float
+
+  lifeStatus    LifeStatus   @default(NORMAL)
+  isActive      Boolean      @default(true)
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime?    @updatedAt
+
+  client        Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  snapshot      Snapshot?          @relation(fields: [snapshotId], references: [id])
+  results       ProjectionResult[]
+
+  @@unique([clientId, name, version])
+  @@index([clientId, name])
   @@map("simulations")
 }
 
-
 model Snapshot {
-  id          String    @id @default(uuid())
-  clientId    String    
-  date        DateTime
-  totalValue  Float     @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime? @updatedAt
-  client      Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  allocationSnapshots AllocationSnapshot[] 
+  id                String    @id @default(uuid())
+  clientId          String
+  date              DateTime
+  name              String?
 
+  financialTotal    Float     @default(0)
+  immobilizedTotal  Float     @default(0)
+  totalValue        Float     @default(0)
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime? @updatedAt
+
+  client              Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  allocations         Allocation[]           
+  allocationSnapshots AllocationSnapshot[]
+  simulations         Simulation[]
+
+  @@index([clientId, date])
   @@map("snapshots")
 }
 
 model Allocation {
-  id           String    @id @default(uuid())
-  clientId     String    
-  name         String
-  type         AllocationType @default(FINANCIAL)
-  value        Float
-  startDate    DateTime  @default(now())
-  contribution Float     @default(0) // Contribuição mensal
-  rate         Float     @default(0) // Taxa de retorno anual esperada
-  isTaxable    Boolean   @default(false) // Se a alocação é tributável
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime? @updatedAt
+  id            String         @id @default(uuid())
+  clientId      String
+  snapshotId    String?
 
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  snapshots AllocationSnapshot[]
+  name          String
+  type          AllocationType @default(FINANCIAL)
+  value         Float
 
+  startDate     DateTime       @default(now())
+  contribution  Float          @default(0)
+  rate          Float          @default(0)
+  isTaxable     Boolean        @default(false)
+
+  isFinanced    Boolean        @default(false)
+  downPayment   Float?
+  installments  Int?
+  interestRate  Float?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime?      @updatedAt
+
+  client        Client                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  snapshot      Snapshot?              @relation(fields: [snapshotId], references: [id])
+  snapshots     AllocationSnapshot[]
+
+  @@index([clientId])
   @@map("allocations")
 }
 
 model Movement {
-  id          String    @id @default(uuid())
-  clientId    String
-  name        String
-  type        String    // INCOME, EXPENSE, INVESTMENT
-  value       Float
-  startDate   DateTime
-  endDate     DateTime?
-  isRecurrent Boolean   @default(false)  
-  createdAt   DateTime  @default(now())
-
-  updatedAt   DateTime? @updatedAt
-
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
+  id            String       @id @default(uuid())
+  clientId      String
+  name          String
+  type          MovementType
+  value         Float
+  startDate     DateTime
+  endDate       DateTime?
+  frequency     Frequency    @default(ONE_TIME)
+  isRecurrent   Boolean      @default(false)
+  isIndexed     Boolean      @default(false)
+  indexationRate Float?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime?    @updatedAt
+  client        Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  @@index([clientId, startDate])
   @@map("movements")
 }
 
-
+// ESTE É O ÚNICO MODEL INSURANCE QUE DEVE EXISTIR
 model Insurance {
-  id          String    @id @default(uuid())
-  clientId    String
-  client      Client    @relation(fields: [clientId], references: [id])
-  name        String    // Nome do seguro (ex: "Seguro de Vida Principal")
-  type        InsuranceType // Tipo de seguro (VIDA, INVALIDEZ)
-  coverage    Float     // Valor da cobertura (ex: 1.000.000)
-  premium     Float     // Valor do prêmio mensal (ex: 500)
-  startDate   DateTime  // Data de início do seguro
-  endDate     DateTime? // Data de término do seguro (opcional)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-enum InsuranceType {
-  LIFE      // Seguro de Vida
-  DISABILITY // Seguro de Invalidez
+  id             String        @id @default(uuid())
+  clientId       String
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name           String
+  type           InsuranceType
+  startDate      DateTime
+  durationMonths Int?          // Tornando opcional, pois pode vir do formato NOVO
+  monthlyPremium Float?        // Tornando opcional
+  insuredAmount  Float?        // Tornando opcional
+  // NOVOS CAMPOS QUE O CONTROLLER ESTÁ TENTANDO ENVIAR
+  coverage       Float?        // Adicionado
+  premium        Float?        // Adicionado
+  endDate        DateTime?     // Adicionado
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  @@index([clientId, type])
 }
 
 model AllocationSnapshot {
@@ -126,22 +208,36 @@ model AllocationSnapshot {
   updatedAt     DateTime? @updatedAt
   snapshot    Snapshot   @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
   allocation  Allocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
-
   @@map("allocation_snapshots")
 }
 
 model ProjectionResult {
-  id           String   @id @default(uuid())
-  simulationId String
-  period       DateTime
-  financial    Float
-  immobilized  Float
-  total        Float
-  totalNoIns   Float
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime? @updatedAt
-  simulation Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
+  id                      String     @id @default(uuid())
+  simulationId            String
+
+  period                  DateTime
+  year                    Int
+  age                     Int
+
+  financial               Float
+  immobilized             Float
+  total                   Float
+  totalNoIns              Float
+
+  accumulatedIncome       Float      @default(0)
+  accumulatedExpenses     Float      @default(0)
+  accumulatedInvestments  Float      @default(0)
+
+  insurancePremiumPaid    Float      @default(0)
+  insuranceValueReceived  Float      @default(0)
+  totalInsuranceValue     Float      @default(0)
+
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime?  @updatedAt
+
+  simulation              Simulation @relation(fields: [simulationId], references: [id], onDelete: Cascade)
 
   @@unique([simulationId, period])
+  @@index([simulationId, year])
   @@map("projection_results")
 }

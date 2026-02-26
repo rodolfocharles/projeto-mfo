@@ -6,23 +6,27 @@ import {
   createSimulationSchema,
   updateSimulationSchema,
   idParamSchema,
+  ProjectionQuerySchema, // Importe o novo schema de query
+  CompareSimulationsQuerySchema, // Importe o novo schema de query
 } from '../schemas'
 
+// ✅ Adicione estes logs logo após as importações
+console.log('--- Debugging simulation.controller.ts Imports ---');
+console.log('ProjectionQuerySchema (in controller):', ProjectionQuerySchema);
+console.log('CompareSimulationsQuerySchema (in controller):', CompareSimulationsQuerySchema);
+console.log('--- End Debugging simulation.controller.ts Imports ---');
 
 
 type CreateSimulationRequest = FastifyRequest<{
   Body: z.infer<typeof createSimulationSchema>
 }>
-
 type UpdateSimulationRequest = FastifyRequest<{
   Params: z.infer<typeof idParamSchema>
   Body: z.infer<typeof updateSimulationSchema>
 }>
-
 type GetSimulationRequest = FastifyRequest<{
   Params: z.infer<typeof idParamSchema>
 }>
-
 type GetByClientRequest = FastifyRequest<{
   Params: z.infer<typeof idParamSchema>
 }>
@@ -76,7 +80,6 @@ export class SimulationController {
   async listByClient(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-
       const client = await prisma.client.findUnique({
         where: { id },
       })
@@ -109,11 +112,9 @@ export class SimulationController {
   async getById(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-
       const simulation = await prisma.simulation.findUnique({
         where: { id },
       })
-
       if (!simulation) {
         return reply.status(404).send({
           statusCode: 404,
@@ -138,7 +139,6 @@ export class SimulationController {
     try {
       const { id } = req.params as { id: string }
       const body = req.body as any
-
       const existingSimulation = await prisma.simulation.findUnique({
         where: { id },
       })
@@ -150,16 +150,13 @@ export class SimulationController {
           message: 'Simulation not found',
         })
       }
-
       const updateData: any = {}
-
       if (body.name !== undefined) updateData.name = body.name
       if (body.startDate !== undefined) updateData.startDate = new Date(body.startDate)
       if (body.realRate !== undefined) updateData.realRate = body.realRate
       if (body.inflation !== undefined) updateData.inflation = body.inflation
       if (body.lifeStatus !== undefined) updateData.lifeStatus = body.lifeStatus
       if (body.version !== undefined) updateData.version = body.version
-
       const simulation = await prisma.simulation.update({
         where: { id },
         data: updateData,
@@ -181,7 +178,6 @@ export class SimulationController {
     try {
       const { id } = req.params as { id: string }
       const body = req.body as any
-
       console.log('Criando versão para simulação:', id)
       console.log('Body recebido:', body)
 
@@ -238,9 +234,7 @@ export class SimulationController {
       })
     }
   }
-
  
-
   //Deletar a Simulação
   async delete(req: FastifyRequest, reply: FastifyReply) {
     try {
@@ -276,112 +270,73 @@ export class SimulationController {
   // COMPARE - Comparar duas simulações
   async compare(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const query = req.query as { id1: string; id2: string; months?: string }
+      
+      // ✅ Adicione este log antes da linha que está dando erro
+      console.log('CompareSimulationsQuerySchema before parse (inside compare):', CompareSimulationsQuerySchema);
+     
+     // ✅ Use o schema para validar e tipar a query
+      const { id1, id2, months, scenario, eventMonth } = CompareSimulationsQuerySchema.parse(req.query);
 
-      if (!query.id1 || !query.id2) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: 'Bad Request',
-          message: 'Both id1 and id2 are required',
-        })
-      }
+      // ✅ Chame o serviço para calcular as projeções
+      const projection1 = await projectionService.calculate(id1, months, scenario, eventMonth);
+      const projection2 = await projectionService.calculate(id2, months, scenario, eventMonth);
 
-      const [simulation1, simulation2] = await Promise.all([
-        prisma.simulation.findUnique({
-          where: { id: query.id1 },
-          include: {
-            client: {
-              include: {
-                movements: true,
-                snapshots: {  
-                  orderBy: { date: 'desc' },
-                  take: 1,
-                  include: {
-                    allocationSnapshots: true,  
-                  },
-                },
-              },
-            },
-          },
-        }),
-        prisma.simulation.findUnique({
-          where: { id: query.id2 },
-          include: {
-            client: {
-              include: {
-                movements: true,
-                snapshots: {  
-                  orderBy: { date: 'desc' },
-                  take: 1,
-                  include: {
-                    allocationSnapshots: true,  
-                  },
-                },
-              },
-            },
-          },
-        }),
-      ])
-
-      if (!simulation1 || !simulation2) {
-        return reply.status(404).send({
-          statusCode: 404,
-          error: 'Not Found',
-          message: 'One or both simulations not found',
-        })
-      }
-
-      const months = query.months ? parseInt(query.months) : 360
-      const projection1 = this.calculateProjection(simulation1, months)
-      const projection2 = this.calculateProjection(simulation2, months)
-
+      // ✅ Adapte a estrutura de comparação para o formato de retorno do seu ProjectionService
+      // Seu ProjectionService retorna um array de objetos com 'period', 'financial', 'immobilized', 'total', 'totalNoIns'
       const comparison = projection1.map((p1, index) => {
         const p2 = projection2[index]
         if (!p2) {
-          // Isso pode acontecer se as projeções tiverem tamanhos diferentes
-          // Você pode logar um aviso ou retornar um valor padrão/nulo
           console.warn(`Projection 2 item not found at index ${index}. Skipping comparison for this month.`);
-          return null; // Retorna null para ser filtrado depois
+          return null;
         }
         return {
-          month: p1.month,
-          date: p1.period,
+          month: index, // O mês pode ser o índice
+          period: p1.period,
           simulation1: {
-            balance: p1.balance,
-            income: p1.income,
-            expense: p1.expense,
+            total: p1.total,
+            financial: p1.financial,
+            immobilized: p1.immobilized,
+            // Adicione income/expense se o ProjectionService começar a retornar
           },
           simulation2: {
-            balance: p2.balance,
-            income: p2.income,
-            expense: p2.expense,
+            total: p2.total,
+            financial: p2.financial,
+            immobilized: p2.immobilized,
+            // Adicione income/expense se o ProjectionService começar a retornar
           },
           difference: {
-            balance: Math.round((p1.balance - p2.balance) * 100) / 100,
-            income: Math.round((p1.income - p2.income) * 100) / 100,
-            expense: Math.round((p1.expense - p2.expense) * 100) / 100,
+            total: Math.round((p1.total - p2.total) * 100) / 100,
+            financial: Math.round((p1.financial - p2.financial) * 100) / 100,
+            immobilized: Math.round((p1.immobilized - p2.immobilized) * 100) / 100,
           },
         }
-      }).filter(Boolean); // Filtra quaisquer entradas nulas que possam ter sido retornadas
+      }).filter(Boolean);
+
+      // ✅ Busque as simulações para retornar os metadados
+      const [sim1Meta, sim2Meta] = await Promise.all([
+        prisma.simulation.findUnique({ where: { id: id1 } }),
+        prisma.simulation.findUnique({ where: { id: id2 } }),
+      ]);
 
       return reply.send({
         simulation1: {
-          id: simulation1.id,
-          name: simulation1.name,
-          version: simulation1.version,
-          realRate: simulation1.realRate,
-          inflation: simulation1.inflation,
+          id: sim1Meta?.id,
+          name: sim1Meta?.name,
+          version: sim1Meta?.version,
+          realRate: sim1Meta?.realRate,
+          inflation: sim1Meta?.inflation,
         },
         simulation2: {
-          id: simulation2.id,
-          name: simulation2.name,
-          version: simulation2.version,
-          realRate: simulation2.realRate,
-          inflation: simulation2.inflation,
+          id: sim2Meta?.id,
+          name: sim2Meta?.name,
+          version: sim2Meta?.version,
+          realRate: sim2Meta?.realRate,
+          inflation: sim2Meta?.inflation,
         },
         comparison,
       })
     } catch (error) {
+      console.error('Error calculating projection:', error);
       console.error('Error comparing simulations:', error)
       return reply.status(500).send({
         statusCode: 500,
@@ -391,43 +346,19 @@ export class SimulationController {
     }
   }
 
+
   //Calculos de Projeção
   async getProjection(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string }
-      const query = req.query as { months?: string }
+      
+      // ✅ Adicione este log antes da linha que está dando erro
+      console.log('ProjectionQuerySchema before parse (inside getProjection):', ProjectionQuerySchema);
+      // ✅ Use o schema para validar e tipar a query
+      const { months, scenario, eventMonth } = ProjectionQuerySchema.parse(req.query);
 
-      const simulation = await prisma.simulation.findUnique({
-        where: { id },
-        include: {
-          client: {
-            include: {
-              movements: true,
-              snapshots: {
-                orderBy: { date: 'desc' },
-                take: 1,
-                include: {
-                  allocationSnapshots: true, 
-                },
-              },
-            },
-          },
-        },
-      })
-
-      if (!simulation) {
-        return reply.status(404).send({
-          statusCode: 404,
-          error: 'Not Found',
-          message: 'Simulation not found',
-        })
-      }
-
-      const months = query.months ? parseInt(query.months) : 360 // Default 30 anos
-
-      // Calcular projeção
-      const projection = this.calculateProjection(simulation, months)
-
+      // ✅ Chame o serviço para calcular a projeção
+      const projection = await projectionService.calculate(id, months, scenario, eventMonth);
       return reply.send(projection)
     } catch (error) {
       console.error('Error calculating projection:', error)
@@ -439,80 +370,7 @@ export class SimulationController {
     }
   }
 
-  // HELPER - Calcular projeção mês a mês
-  private calculateProjection(simulation: any, months: number) {
-    const projection = []
-    let balance = 0
-
-    // Pegar patrimônio inicial (última alocação)
-    if (simulation.client.snapshots && simulation.client.snapshots.length > 0) {
-      const lastSnapshot = simulation.client.snapshots[0]
-      if (lastSnapshot.allocationSnapshots) { 
-        balance = lastSnapshot.allocationSnapshots.reduce((sum: number, item: any) => {
-          return sum + item.valueAtSnapshot;
-        }, 0)
-    }
-    }
-
-    const startDate = new Date(simulation.startDate)
-    const monthlyRealRate = simulation.realRate / 100 / 12
-    const monthlyInflation = simulation.inflation / 100 / 12
-
-    for (let month = 0; month <= months; month++) {
-      const currentDate = new Date(startDate)
-      currentDate.setMonth(currentDate.getMonth() + month)
-
-      // Calcular receitas e despesas do mês
-      let monthlyIncome = 0
-      let monthlyExpense = 0
-
-      simulation.client.movements.forEach((movement: any) => {
-        const movementStart = new Date(movement.startDate)
-        const movementEnd = movement.endDate ? new Date(movement.endDate) : null
-
-        // Verificar se movimento está ativo neste mês
-        if (currentDate >= movementStart && (!movementEnd || currentDate <= movementEnd)) {
-          const value = this.calculateMovementValue(movement, month, monthlyInflation)
-
-          if (movement.type === 'INCOME') {
-            monthlyIncome += value
-          } else if (movement.type === 'EXPENSE') {
-            monthlyExpense += value
-          }
-        }
-      })
-
-      // Atualizar saldo
-      const netFlow = monthlyIncome - monthlyExpense
-      balance = balance * (1 + monthlyRealRate) + netFlow
-
-      projection.push({
-        month,
-        period: currentDate.toISOString(),
-        balance: Math.round(balance * 100) / 100,
-        income: Math.round(monthlyIncome * 100) / 100,
-        expense: Math.round(monthlyExpense * 100) / 100,
-      })
-    }
-
-    return projection
-  }
-
-  // HELPER - Calcular valor do movimento com indexação
-  private calculateMovementValue(movement: any, month: number, monthlyInflation: number) {
-    let value = movement.value
-
-    if (movement.indexation === 'INFLATION') {
-      value = value * Math.pow(1 + monthlyInflation, month)
-    }
-
-    // Aplicar frequência
-    if (movement.frequency === 'YEARLY') {
-      value = month % 12 === 0 ? value : 0
-    } else if (movement.frequency === 'ONE_TIME') {
-      value = month === 0 ? value : 0
-    }
-
-    return value
-  }
+  // ✅ REMOVER ESTES MÉTODOS DO CONTROLLER, POIS ESTÃO NO SERVICE
+  // private calculateProjection(simulation: any, months: number) { ... }
+  // private calculateMovementValue(movement: any, month: number, monthlyInflation: number) { ... }
 }

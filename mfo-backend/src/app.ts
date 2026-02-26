@@ -36,7 +36,7 @@ app.register(swaggerUI, {
 
 //Configure o CORS para permitir PUT e DELETE
 app.register(cors, {
-  origin: 'http://localhost:3001', // Ou '*' para permitir de qualquer origem (menos seguro em produção)
+  origin: ['http://localhost:3000', 'http://localhost:3001'], // Aceita ambas as portas
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Adicione PUT e DELETE aqui
   allowedHeaders: ['Content-Type', 'Authorization'], // Adicione outros headers se necessário
   credentials: true, // Se você estiver usando cookies ou cabeçalhos de autorização

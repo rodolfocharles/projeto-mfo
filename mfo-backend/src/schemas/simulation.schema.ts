@@ -1,33 +1,37 @@
-// mfo-backend/src/schemas/simulation.schema.ts (ou onde estiver)
+// mfo-backend/src/schemas/simulation.schema.ts
+
 import { z } from 'zod'
 import {
   UUIDSchema,
   DateTimeSchema,
   PositiveNumberSchema,
   ErrorResponseSchema,
-} from './common.schema'
+} from './common.schema' // ✅ Certifique-se que common.schema está correto e no mesmo nível
 
-//DEFINIR LifeStatusEnum AQUI, ou garantir que ele esteja em common.schema
+// SEU LifeStatusEnum EXISTENTE
 export const LifeStatusEnum = z.enum(['NORMAL', 'RETIRED', 'DECEASED']);
+// NOVO: Schema para o tipo de cenário de projeção
+export const ProjectionScenarioEnum = z.enum(['VIDA', 'INVALIDEZ', 'NONE']).default('NONE').describe('Cenário de projeção para simular eventos específicos (VIDA, INVALIDEZ, NONE)');
+
 
 // SCHEMAS DE REQUEST
 export const CreateSimulationSchema = z.object({
   clientId: UUIDSchema.describe('ID do cliente'),
   name: z.string().min(1).describe('Nome da simulação'),
   startDate: DateTimeSchema.describe('Data de início'),
-  realRate: z.number().min(0).max(1).describe('Taxa real anual (ex: 0.03 para 3%)'), 
-  inflation: z.number().min(0).max(1).describe('Inflação anual (ex: 0.02 para 2%)'), 
+  realRate: z.number().min(0).max(1).describe('Taxa real anual (ex: 0.03 para 3%)'),
+  inflation: z.number().min(0).max(1).describe('Inflação anual (ex: 0.02 para 2%)'),
   lifeStatus: LifeStatusEnum.describe('Status de vida'),
-  version: z.number().int().min(1).optional().describe('Versão da simulação (padrão: 1)'), 
+  version: z.number().int().min(1).optional().describe('Versão da simulação (padrão: 1)'),
 })
 
 export const UpdateSimulationSchema = z.object({
   name: z.string().min(1).optional().describe('Novo nome'),
-  startDate: DateTimeSchema.optional().describe('Nova data de início'), 
-  realRate: z.number().min(0).max(1).optional().describe('Nova taxa real'), 
-  inflation: z.number().min(0).max(1).optional().describe('Nova inflação'), 
+  startDate: DateTimeSchema.optional().describe('Nova data de início'),
+  realRate: z.number().min(0).max(1).optional().describe('Nova taxa real'),
+  inflation: z.number().min(0).max(1).optional().describe('Nova inflação'),
   lifeStatus: LifeStatusEnum.optional().describe('Novo status'),
-  version: z.number().int().min(1).optional().describe('Nova versão da simulação'), 
+  version: z.number().int().min(1).optional().describe('Nova versão da simulação'),
 })
 
 export const SimulationParamsSchema = z.object({
@@ -38,22 +42,37 @@ export const ClientParamsSchema = z.object({
   id: UUIDSchema.describe('ID do cliente'),
 })
 
+// NOVO: Schema para os parâmetros de query da projeção
+export const ProjectionQuerySchema = z.object({
+  months: z.coerce.number().int().min(1).describe('Número de meses para a projeção'),
+  scenario: ProjectionScenarioEnum.optional().describe('Cenário de evento para a projeção (VIDA, INVALIDEZ, NONE)'),
+  eventMonth: z.coerce.number().int().min(0).optional().describe('Mês em que o evento ocorre (0 para o mês atual)'),
+});
+
+// NOVO: Schema para os parâmetros de query da comparação
+export const CompareSimulationsQuerySchema = z.object({
+  id1: UUIDSchema.describe('ID da primeira simulação'),
+  id2: UUIDSchema.describe('ID da segunda simulação'),
+  months: z.coerce.number().int().min(1).describe('Número de meses para a projeção'),
+  scenario: ProjectionScenarioEnum.optional().describe('Cenário de evento para a projeção (VIDA, INVALIDEZ, NONE)'),
+  eventMonth: z.coerce.number().int().min(0).optional().describe('Mês em que o evento ocorre (0 para o mês atual)'),
+});
+
+
 // SCHEMAS DE RESPOSTA
-// Schema base do Prisma (o que o Prisma retorna)
 export const PrismaSimulationSchema = z.object({
   id: UUIDSchema,
   clientId: UUIDSchema,
   name: z.string(),
-  startDate: z.date(), // Prisma retorna Date
+  startDate: z.date(),
   realRate: z.number(),
   inflation: z.number(),
   lifeStatus: LifeStatusEnum,
-  version: z.number().int(), 
-  createdAt: z.date(), // Prisma retorna Date
-  updatedAt: z.date().nullable(), 
+  version: z.number().int(),
+  createdAt: z.date(),
+  updatedAt: z.date().nullable(),
 })
 
-// Resposta final transformado para strings (o que a API envia)
 export const SimulationResponseSchema = PrismaSimulationSchema.transform((data) => ({
   id: data.id,
   clientId: data.clientId,
@@ -62,25 +81,28 @@ export const SimulationResponseSchema = PrismaSimulationSchema.transform((data) 
   realRate: data.realRate,
   inflation: data.inflation,
   lifeStatus: data.lifeStatus,
-  version: data.version, 
+  version: data.version,
   createdAt: data.createdAt.toISOString(),
-  updatedAt: data.updatedAt ? data.updatedAt.toISOString() : null, 
+  updatedAt: data.updatedAt ? data.updatedAt.toISOString() : null,
 }))
 
 export const SimulationListResponseSchema = z.array(SimulationResponseSchema)
 
-// Schema para os itens de projeção (alinha com o frontend)
+// ATUALIZADO: Schema para os itens de projeção (alinha com o que o ProjectionService retorna)
 export const ProjectionItemSchema = z.object({
-  month: z.number().int(),
-  period: DateTimeSchema, // ✅ Renomeado de 'date' para 'period' para alinhar com o frontend
-  balance: z.number(),
+  simulationId: UUIDSchema,
+  period: DateTimeSchema,
+  financial: z.number(),
+  immobilized: z.number(),
+  total: z.number(),
+  totalNoIns: z.number(),
   income: z.number(),
   expense: z.number(),
 })
 
 export const ProjectionResponseSchema = z.array(ProjectionItemSchema)
 
-// Schema para a rota de comparação (compare)
+// ATUALIZADO: Schema para a rota de comparação (compare)
 export const CompareSimulationResponseSchema = z.object({
   simulation1: z.object({
     id: UUIDSchema,
@@ -98,21 +120,21 @@ export const CompareSimulationResponseSchema = z.object({
   }),
   comparison: z.array(z.object({
     month: z.number().int(),
-    date: DateTimeSchema, // Aqui é 'date' no controller, então mantemos 'date'
+    period: DateTimeSchema,
     simulation1: z.object({
-      balance: z.number(),
-      income: z.number(),
-      expense: z.number(),
+      total: z.number(),
+      financial: z.number(),
+      immobilized: z.number(),
     }),
     simulation2: z.object({
-      balance: z.number(),
-      income: z.number(),
-      expense: z.number(),
+      total: z.number(),
+      financial: z.number(),
+      immobilized: z.number(),
     }),
     difference: z.object({
-      balance: z.number(),
-      income: z.number(),
-      expense: z.number(),
+      total: z.number(),
+      financial: z.number(),
+      immobilized: z.number(),
     }),
   })),
 });
@@ -126,3 +148,12 @@ export type ProjectionItem = z.infer<typeof ProjectionItemSchema>
 export type CompareSimulationResponse = z.infer<typeof CompareSimulationResponseSchema>;
 
 export { ErrorResponseSchema }
+
+
+// ✅ Adicione estes logs no final do arquivo
+console.log('--- Debugging simulation.schema.ts ---');
+console.log('LifeStatusEnum:', LifeStatusEnum);
+console.log('ProjectionScenarioEnum:', ProjectionScenarioEnum);
+console.log('ProjectionQuerySchema:', ProjectionQuerySchema);
+console.log('CompareSimulationsQuerySchema:', CompareSimulationsQuerySchema);
+console.log('--- End Debugging simulation.schema.ts ---');

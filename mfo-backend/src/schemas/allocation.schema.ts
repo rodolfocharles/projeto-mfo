@@ -64,6 +64,7 @@ export const AllocationResponseSchema = PrismaAllocationSchema.transform((data) 
   id: data.id,
   clientId: data.clientId,
   name: data.name,
+  type: data.type,                      // <–– adicionado
   value: data.value,
   startDate: data.startDate.toISOString(), // Transforma Date para string
   contribution: data.contribution,

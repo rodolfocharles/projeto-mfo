@@ -24,6 +24,7 @@ export class AllocationController {
         data: {
           clientId: body.clientId,
           name: body.name,
+          type: body.type,  
           value: body.value,
           startDate: new Date(body.startDate),
           contribution: body.contribution ?? 0, // Padrão 0 se não for fornecido
@@ -67,6 +68,25 @@ export class AllocationController {
       const allocations = await prisma.allocation.findMany({
         where: { clientId: id },
         orderBy: { name: 'asc' },
+        select: { // <--- ADICIONADO ESTE SELECT
+          id: true,
+          clientId: true,
+          snapshotId: true,
+          name: true,
+          type: true, // <--- AGORA O 'type' ESTÁ INCLUÍDO EXPLICITAMENTE
+          value: true,
+          startDate: true,
+          contribution: true,
+          rate: true,
+          isTaxable: true,
+          isFinanced: true,
+          downPayment: true,
+          installments: true,
+          interestRate: true,
+          createdAt: true,
+          updatedAt: true,
+          // Certifique-se de incluir todos os outros campos que o frontend precisa
+        },
       })
 
       return reply.send(allocations)
@@ -130,6 +150,7 @@ export class AllocationController {
 
       if (body.name !== undefined) updateData.name = body.name
       if (body.value !== undefined) updateData.value = body.value
+      if (body.type !== undefined) updateData.type = body.type
       if (body.startDate !== undefined) updateData.startDate = new Date(body.startDate)
       if (body.contribution !== undefined) updateData.contribution = body.contribution
       if (body.rate !== undefined) updateData.rate = body.rate
