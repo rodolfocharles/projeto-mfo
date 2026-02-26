@@ -17,7 +17,7 @@ import {
   CreateAllocationSnapshot,
 } from '@/lib/schemas/allocation-snapshot.schema' // Importar schemas de snapshot
 
-const MOCK_CLIENT_ID = 'f815d174-c611-48d3-a363-8428f5f79ea1' // Use um ID de cliente válido
+const MOCK_CLIENT_ID = 'fc476bb9-3f05-47c3-968d-0098d289f3ba' // Use um ID de cliente válido
 
 export default function HistoryPage() {
   const queryClient = useQueryClient()

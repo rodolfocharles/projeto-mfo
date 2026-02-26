@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { AllocationForm } from '@/components/allocations/allocation-form'
 
-const MOCK_CLIENT_ID = 'f815d174-c611-48d3-a363-8428f5f79ea1'
+const MOCK_CLIENT_ID = 'fc476bb9-3f05-47c3-968d-0098d289f3ba'
 
 export default function AllocationsPage() {
   const queryClient = useQueryClient()
@@ -193,6 +193,8 @@ export default function AllocationsPage() {
                   <TableRow key={allocation.id}>
                     <TableCell className="font-medium">{allocation.name}</TableCell>
                     <TableCell>
+                      {/* ADICIONE ESTE CONSOLE.LOG AQUI */}
+                      {console.log('Tipo da alocação:', allocation.type)}
                       {allocation.type === 'FINANCIAL' ? 'Financeira' :
                       allocation.type === 'IMMOBILIZED' ? 'Imobilizada' :
                       'Desconhecido'}

@@ -18,7 +18,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { SimulationForm } from '@/components/simulations/simulation-form';
 import { toast } from 'sonner'; // Para notificações mais amigáveis
 
-const MOCK_CLIENT_ID = 'f815d174-c611-48d3-a363-8428f5f79ea1'; // Use seu ID de cliente mockado
+const MOCK_CLIENT_ID = 'fc476bb9-3f05-47c3-968d-0098d289f3ba'; // Use seu ID de cliente mockado 
+//const MOCK_CLIENT_ID = 'b9cb018e-6647-409e-9c78-5958ba48809c';
 
 export default function ProjectionPage() {
   const queryClient = useQueryClient();
