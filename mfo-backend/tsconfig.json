@@ -1,64 +1,46 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
+    // --- Configurações para o alias "@/" ---
+    "baseUrl": "./src", // Define a base para a resolução de módulos não-relativos
+    "paths": {
+      "@/*": ["*"] // Mapeia "@/" para a raiz do seu "baseUrl" (que é "./src")
+    },
+
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    "rootDir": "./src", // Define a raiz dos seus arquivos fonte
+    "outDir": "./dist", // Onde os arquivos compilados serão colocados
 
     // Environment Settings
-    // See also https://aka.ms/tsconfig/module
-    //"module": "nodenext",
-    //"target": "esnext",
-    "target": "ES2022",
-    "module": "CommonJS",
-    "outDir": "./dist",
-    //"rootDir": "./src",
-    "types": [],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
+    "target": "ES2022", // Versão do ECMAScript para a qual o código será compilado
+    "module": "CommonJS", // Sistema de módulos (CommonJS é padrão para Node.js)
+    "types": ["node"], // Inclui as definições de tipo para Node.js
+    "lib": ["ES2022"], // Bibliotecas padrão do JavaScript disponíveis (ES2022 para corresponder ao target)
 
     // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "sourceMap": true,       // Gera arquivos .map para depuração
+    "declaration": true,     // Gera arquivos .d.ts para tipagem
+    "declarationMap": true,  // Gera arquivos .map para os .d.ts
+    
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    // Style Options
-    // "noImplicitReturns": true,
-    // "noImplicitOverride": true,
-    // "noUnusedLocals": true,
-    // "noUnusedParameters": true,
-    // "noFallthroughCasesInSwitch": true,
-    // "noPropertyAccessFromIndexSignature": true,
-
     // Recommended Options
-    "strict": true,
-    "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-  }
+    "strict": true,                 // Ativa todas as opções de verificação de tipo estritas
+    "esModuleInterop": true,        // Permite importações de módulos CommonJS como ES Modules
+    "skipLibCheck": true,           // Pula a verificação de tipo de arquivos de declaração de bibliotecas
+    "forceConsistentCasingInFileNames": true, // Garante que o casing dos nomes de arquivos seja consistente
+
+    // --- Opções que podem ser ajustadas para compatibilidade com Fastify/Zod/CommonJS ---
+    // "jsx": "react-jsx", // Mantenha se você tiver arquivos JSX/TSX no backend (menos comum)
+    // "verbatimModuleSyntax": true, // Pode causar problemas com CommonJS e algumas ferramentas
+    // "isolatedModules": true,      // Pode causar problemas com CommonJS e algumas ferramentas
+    "moduleDetection": "force",    // Garante que todos os arquivos sejam tratados como módulos
+    "moduleResolution": "node", // Resolve módulos usando a lógica do Node.js
+  },
+  "include": ["src/**/*"], // Inclui todos os arquivos TypeScript na pasta src
+  "exclude": ["node_modules", "dist"] // Exclui essas pastas da compilação
 }
-// {
-//   "compilerOptions": {
-//     "target": "ES2020",
-//     "module": "commonjs",
-//     "lib": ["ES2020"],
-//     "outDir": "./dist",
-//     "rootDir": "./src",
-//     "strict": true,
-//     "esModuleInterop": true,
-//     "skipLibCheck": true,
-//     "forceConsistentCasingInFileNames": true
-//   },
-//   "include": ["src/**/*"],
-//   "exclude": ["node_modules", "dist"]
-// }
+

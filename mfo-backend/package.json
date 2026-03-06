@@ -6,12 +6,13 @@
   "author": "Rodolfo Charles",
   "license": "ISC",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "start": "tsx src/server.ts",
+    "dev": "cross-env NODE_OPTIONS=\"-r tsconfig-paths/register\" tsx watch src/server.ts",
+    "start": "node dist/server.js",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "migrate:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "build": "tsc"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -27,13 +28,17 @@
     "@fastify/swagger": "^9.6.1",
     "@fastify/swagger-ui": "^5.2.3",
     "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
     "fastify": "^5.6.2",
     "fastify-type-provider-zod": "^6.1.0",
     "prisma": "^5.22.0",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^25.0.1",
+    "cross-env": "^7.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

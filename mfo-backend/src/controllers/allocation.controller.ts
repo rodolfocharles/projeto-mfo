@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify'
 import { prisma } from '../db/prisma'
 
-export class AllocationController {
+export class AllocationControllerOLD {
   // CREATE - Criar nova alocação
   async create(req: FastifyRequest, reply: FastifyReply) {
     try {
