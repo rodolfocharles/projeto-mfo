@@ -23,3 +23,10 @@ export interface IListClientsUseCase {
 export interface IDeleteClientUseCase {
   execute(id: string): Promise<void>;
 }
+
+// interface responsável por autenticar um cliente — o caso de uso retorna o cliente
+// caso as credenciais sejam válidas. A responsabilidade de gerar o JWT fica na
+// camada de infraestrutura (controlador) para manter o caso de uso desacoplado.
+export interface IAuthenticateClientUseCase {
+  execute(email: string, password: string): Promise<ClientResponse>;
+}

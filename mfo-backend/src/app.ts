@@ -4,6 +4,7 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
+import jwt from '@fastify/jwt';
 import {
   serializerCompiler,
   validatorCompiler,
@@ -82,8 +83,17 @@ import { MovementController } from './infrastructure/http/controllers/MovementCo
 import { InsuranceController } from '@/infrastructure/http/controllers/InsuranceController';
 import { SimulationController } from '@/infrastructure/http/controllers/SimulationController';
 import { AllocationSnapshotController } from '@/infrastructure/http/controllers/AllocationSnapshotController';
-import { HistoryController } from '@/infrastructure/http/controllers/HistoryController';
+import { HistoryController } from '@/infrastructure/http/controllers/HistoryController';import { AuthController } from './infrastructure/http/controllers/AuthController';
 
+// rotas ddd
+import { allocationsRoutes } from './infrastructure/http/routes/allocations.routes';
+import { clientsRoutes } from './infrastructure/http/routes/clients.routes';
+import { movementsRoutes } from './infrastructure/http/routes/movements.routes';
+import { insurancesRoutes } from '@/infrastructure/http/routes/insurances.routes';
+import { simulationsRoutes } from '@/infrastructure/http/routes/simulations.routes';
+import { allocationSnapshotRoutes } from '@/infrastructure/http/routes/allocation-snapshot.routes';
+import { historyRoutes } from '@/infrastructure/http/routes/history.routes';
+import { authRoutes } from './infrastructure/http/routes/auth.routes';
 // --- Rotas DDD ---
 import { allocationsRoutes } from './infrastructure/http/routes/allocations.routes';
 import { clientsRoutes } from './infrastructure/http/routes/clients.routes';
@@ -94,7 +104,7 @@ import { allocationSnapshotRoutes } from '@/infrastructure/http/routes/allocatio
 import { historyRoutes } from '@/infrastructure/http/routes/history.routes';
 
 // --- Rotas legadas ---
-import { simulationRoutes } from './routes/simulations';
+// import { simulationsRoutes } from './routes/simulations';
 // import { allocationSnapshotRoutes } from './routes/allocation-snapshots';
 // import { movementRoutes } from './routes/movements';
 // import { insuranceRoutes } from './routes/insurances';
@@ -162,6 +172,7 @@ app.register(swagger, {
 
 app.register(swaggerUI, { routePrefix: '/docs' });
 
+// configuração de CORS
 app.register(cors, {
   origin: ['http://localhost:3000', 'http://localhost:3001'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -169,11 +180,34 @@ app.register(cors, {
   credentials: true,
 });
 
+// ------------------------------------------------------------------
+// JWT plugin
+// ------------------------------------------------------------------
+app.register(jwt, {
+  secret: process.env.JWT_SECRET || 'change_this_to_something_secure',
+});
+
+// decorador utilitário para proteger rotas
+app.decorate('authenticate', async (req, reply) => {
+  try {
+    await req.jwtVerify();
+  } catch (err) {
+    reply.send(err);
+  }
+});
+
+
 app.get('/health', async () => ({ ok: true }));
 
 // -------------------------------------------------------
 // Injeção de Dependências
 // -------------------------------------------------------
+// +++++++++++++++++++++++++++++++++++++++
+// casos de uso e controladores de autenticação
+// +++++++++++++++++++++++++++++++++++++++
+import { AuthenticateClient } from './application/use-cases/AuthenticateClient';
+import { AuthController } from './infrastructure/http/controllers/AuthController';
+
 
 // 0. Logger
 const logger = new ConsoleLogger();
@@ -191,6 +225,10 @@ const allocationSnapshotsRepository = new PrismaAllocationSnapshotsRepository()
 const allocationSnapshotItemsRepository = new PrismaAllocationSnapshotItemsRepository()
 const historiesRepository = new PrismaHistoriesRepository()
 const projectionService = new ProjectionService(movementsRepository, insurancesRepository, allocationSnapshotsRepository as any, clientRepository, simulationsRepository)
+
+// 2.1. use-case específico de autenticação
+const authenticateClientBase = new AuthenticateClient(clientRepository, hashService);
+const authController = new AuthController(authenticateClientBase);
 
 // 3. Casos de uso: Allocation (base, sem log)
 const createAllocationBase = new CreateAllocation(allocationsRepository, clientRepository);
@@ -350,7 +388,35 @@ const historyController = new HistoryController(
 // -------------------------------------------------------
 // Rotas DDD
 // -------------------------------------------------------
+// ------------------------------------------------------------------
+// roteamento e proteção de endpoints
+// ------------------------------------------------------------------
+
+
+
+// global hook que exige token em todas as rotas que vierem depois do
+// login; liberamos explicitamente POST /api/clients (registro) e
+// POST /api/auth/login
+app.addHook('preHandler', async (req, reply) => {
+  const openPaths: Array<{method: string; path: string}> = [
+    { method: 'POST', path: '/api/auth/login' },
+    { method: 'POST', path: '/api/clients' },
+  ];
+
+  // rota corrente (com prefixo) e método
+  const matching = openPaths.find(
+    (p) => p.method === req.method && req.url === p.path,
+  );
+  if (matching) {
+    return;
+  }
+  await (app as any).authenticate(req, reply);
+});
+
+// agora registramos as demais rotas conhecendo que o hook acima irá
+// verificá‑las
 app.register(async (fastifyInstance) => {
+  // routes importadas abaixo
   await allocationsRoutes(fastifyInstance, allocationController);
   await clientsRoutes(fastifyInstance, clientController);
   await movementsRoutes(fastifyInstance, movementController);
@@ -358,6 +424,9 @@ app.register(async (fastifyInstance) => {
   await simulationsRoutes(fastifyInstance, simulationController);
   await allocationSnapshotRoutes(fastifyInstance, allocationSnapshotController);
   await historyRoutes(fastifyInstance, historyController);
+  // adição de authRoutes também dentro do mesmo grupo, mas já foi aberto
+  // pelo hook; fica seguro registrar aqui após definição de controller
+  await authRoutes(fastifyInstance, authController);
 }, { prefix: '/api' });
 
 // -------------------------------------------------------

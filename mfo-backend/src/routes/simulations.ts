@@ -14,7 +14,7 @@ import {
 import { ErrorResponseSchema, UUIDSchema } from '../schemas/common.schema'
 import { z } from 'zod'
 
-export async function simulationRoutes(app: FastifyInstance) {
+export async function simulationsRoutes(app: FastifyInstance) {
   const controller = new SimulationController()
 
   const server = app.withTypeProvider<ZodTypeProvider>()
