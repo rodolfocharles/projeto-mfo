@@ -1,6 +1,6 @@
 // src/domain/entities/Insurance.ts
 
-import { InsuranceType } from '../value-objects/InsuranceType'
+import { InsuranceType } from '@/domain/value-objects/InsuranceType'
 
 interface InsuranceProps {
   id?: string
@@ -10,9 +10,9 @@ interface InsuranceProps {
   coverage: number
   premium: number
   startDate: Date
-  endDate?: Date | null
+  endDate?: Date | null | undefined
   createdAt?: Date
-  updatedAt?: Date | null
+  updatedAt?: Date | null | undefined
 }
 
 export class Insurance {
@@ -23,9 +23,9 @@ export class Insurance {
   private _coverage: number
   private _premium: number
   private _startDate: Date
-  private _endDate?: Date | null
+  private _endDate?: Date | null | undefined
   private _createdAt: Date
-  private _updatedAt?: Date | null
+  private _updatedAt?: Date | null | undefined
 
   private constructor(props: InsuranceProps) {
     this._id = props.id || crypto.randomUUID()
@@ -35,9 +35,9 @@ export class Insurance {
     this._coverage = props.coverage
     this._premium = props.premium
     this._startDate = props.startDate
-    this._endDate = props.endDate
+    this._endDate = props.endDate ?? undefined
     this._createdAt = props.createdAt || new Date()
-    this._updatedAt = props.updatedAt
+    this._updatedAt = props.updatedAt ?? undefined
 
     // Validações iniciais
     if (!this._clientId) {
@@ -80,7 +80,7 @@ export class Insurance {
     newCoverage: number,
     newPremium: number,
     newStartDate: Date,
-    newEndDate?: Date | null,
+    newEndDate?: Date | null | undefined
   ): void {
     if (!newName || newName.trim().length < 3) {
       throw new Error('Insurance name must be at least 3 characters long.')

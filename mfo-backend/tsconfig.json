@@ -4,43 +4,48 @@
     // --- Configurações para o alias "@/" ---
     "baseUrl": "./src", // Define a base para a resolução de módulos não-relativos
     "paths": {
-      "@/*": ["*"] // Mapeia "@/" para a raiz do seu "baseUrl" (que é "./src")
+      "@/*": [
+        "*"
+      ] // Mapeia "@/" para a raiz do seu "baseUrl" (que é "./src")
     },
-
     // File Layout
     "rootDir": "./src", // Define a raiz dos seus arquivos fonte
     "outDir": "./dist", // Onde os arquivos compilados serão colocados
-
     // Environment Settings
     "target": "ES2022", // Versão do ECMAScript para a qual o código será compilado
     "module": "CommonJS", // Sistema de módulos (CommonJS é padrão para Node.js)
-    "types": ["node"], // Inclui as definições de tipo para Node.js
-    "lib": ["ES2022"], // Bibliotecas padrão do JavaScript disponíveis (ES2022 para corresponder ao target)
-
+    "types": [
+      "node",
+      "jest"
+    ], // Inclui as definições de tipo para Node.js e Jest
+    "lib": [
+      "ES2022"
+    ], // Bibliotecas padrão do JavaScript disponíveis (ES2022 para corresponder ao target)
     // Other Outputs
-    "sourceMap": true,       // Gera arquivos .map para depuração
-    "declaration": true,     // Gera arquivos .d.ts para tipagem
-    "declarationMap": true,  // Gera arquivos .map para os .d.ts
-    
-
+    "sourceMap": true, // Gera arquivos .map para depuração
+    "declaration": true, // Gera arquivos .d.ts para tipagem
+    "declarationMap": true, // Gera arquivos .map para os .d.ts
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-
     // Recommended Options
-    "strict": true,                 // Ativa todas as opções de verificação de tipo estritas
-    "esModuleInterop": true,        // Permite importações de módulos CommonJS como ES Modules
-    "skipLibCheck": true,           // Pula a verificação de tipo de arquivos de declaração de bibliotecas
+    "strict": true, // Ativa todas as opções de verificação de tipo estritas
+    "esModuleInterop": true, // Permite importações de módulos CommonJS como ES Modules
+    "skipLibCheck": true, // Pula a verificação de tipo de arquivos de declaração de bibliotecas
     "forceConsistentCasingInFileNames": true, // Garante que o casing dos nomes de arquivos seja consistente
-
     // --- Opções que podem ser ajustadas para compatibilidade com Fastify/Zod/CommonJS ---
     // "jsx": "react-jsx", // Mantenha se você tiver arquivos JSX/TSX no backend (menos comum)
     // "verbatimModuleSyntax": true, // Pode causar problemas com CommonJS e algumas ferramentas
     // "isolatedModules": true,      // Pode causar problemas com CommonJS e algumas ferramentas
-    "moduleDetection": "force",    // Garante que todos os arquivos sejam tratados como módulos
+    "moduleDetection": "force", // Garante que todos os arquivos sejam tratados como módulos
     "moduleResolution": "node", // Resolve módulos usando a lógica do Node.js
   },
-  "include": ["src/**/*"], // Inclui todos os arquivos TypeScript na pasta src
-  "exclude": ["node_modules", "dist"] // Exclui essas pastas da compilação
+  "include": [
+    "src/**/*",
+    "tests/**/*.ts"
+  ], // Inclui todos os arquivos TypeScript na pasta src e testes
+  "exclude": [
+    "node_modules",
+    "dist"
+  ] // Exclui essas pastas da compilação
 }
-

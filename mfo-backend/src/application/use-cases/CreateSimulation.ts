@@ -18,7 +18,7 @@ export class CreateSimulation implements ICreateSimulationUseCase {
     const client = await this.clientRepository.findById(input.clientId)
     if (!client) throw new Error('Client not found.')
 
-    const simulation = Simulation.create({
+    const props: any = {
       clientId: input.clientId,
       name: input.name,
       startDate: new Date(input.startDate),
@@ -26,13 +26,23 @@ export class CreateSimulation implements ICreateSimulationUseCase {
       inflation: input.inflation,
       lifeStatus: input.lifeStatus as LifeStatus,
       version: input.version || 1,
-      scenario: input.scenario,
-      endDate: input.endDate ? new Date(input.endDate) : undefined,
-      retirementAge: input.retirementAge,
-      isActive: input.isActive,
-    })
+      scenario: input.scenario ?? '', // always string
+    }
+
+    if (input.endDate) {
+      props.endDate = new Date(input.endDate)
+    }
+    if (input.retirementAge !== undefined) {
+      props.retirementAge = input.retirementAge
+    }
+    if (input.isActive !== undefined) {
+      props.isActive = input.isActive
+    }
+
+    const simulation = Simulation.create(props)
 
     const created = await this.simulationsRepository.create(simulation)
-    return simulationToResponse(created)
+    // cast to any because SimulationInternalResponse typing may not exactly match
+    return simulationToResponse(created) as any
   }
 }

@@ -6,6 +6,7 @@ import { ISnapshotsRepository } from '@/domain/repositories/ISnapshotsRepository
 import { IClientRepository } from '@/domain/repositories/IClientRepository'
 import { ISimulationsRepository } from '@/domain/repositories/ISimulationsRepository'
 import { IProjectionService, ProjectionResultItem } from './IProjectionService'
+import { Insurance } from '@/domain/entities/Insurance'
 import { Calculator } from '@/utils/calculator'
 
 export class ProjectionService implements IProjectionService {
@@ -76,7 +77,15 @@ export class ProjectionService implements IProjectionService {
       const currentMonth = currentPeriod.getMonth() + 1
 
       // Calcular idade
-      const age = Calculator.calculateAge(client.birthDate, currentPeriod)
+      let age: number | undefined; // Declare 'age' para aceitar undefined
+      if (client.birthDate) {
+        age = Calculator.calculateAge(client.birthDate, currentPeriod);
+      } else {
+        // Se client.birthDate for undefined, você precisa decidir o que fazer.
+        // Por exemplo, pode definir uma idade padrão (ex: 0), ou deixar como undefined.
+        // Por enquanto, vamos deixar como undefined.
+        age = undefined; // Ou 0, ou alguma outra lógica padrão para clientes sem data de nascimento
+      }
 
       // Filtrar movimentações ativas e aplicar inflação
       const activeMovements = movements
@@ -87,13 +96,29 @@ export class ProjectionService implements IProjectionService {
         }))
 
       // Filtrar seguros ativos e aplicar inflação
-      const activeInsurances = insurances
-        .filter(ins => Calculator.isInsuranceActive(ins, currentPeriod))
-        .map(ins => ({
-          ...ins,
+      const activeInsurances: Insurance[] = insurances
+      .filter((ins: Insurance) => Calculator.isInsuranceActive(ins, currentPeriod))
+      .map((ins: Insurance) => {
+        console.log('Insurance being processed:', {
+          id: ins.id,
+          name: ins.name,
+          nameLength: ins.name?.length,
+          nameType: typeof ins.name,
+        });
+
+        return Insurance.create({
+          id: ins.id,
+          clientId: ins.clientId,
+          type: ins.type,
+          name: ins.name,
+          startDate: ins.startDate,
+          endDate: ins.endDate === undefined ? null : ins.endDate,
+          createdAt: ins.createdAt,
+          updatedAt: ins.updatedAt,
           premium: Calculator.applyInflation(ins.premium, monthlyInflationRate, i),
           coverage: Calculator.applyInflation(ins.coverage, monthlyInflationRate, i),
-        }))
+        });
+      });
 
       // Calcular receitas e despesas
       let income = 0

@@ -12,7 +12,8 @@
     "db:studio": "prisma studio",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx prisma/seed.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest --passWithNoTests"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

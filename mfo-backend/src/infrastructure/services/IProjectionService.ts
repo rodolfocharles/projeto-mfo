@@ -10,7 +10,7 @@ export interface ProjectionResultItem {
   income: number
   expense: number
   year: number
-  age: number
+  age: number | undefined
   accumulatedIncome: number
   accumulatedExpenses: number
   accumulatedInvestments: number

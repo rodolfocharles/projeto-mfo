@@ -75,6 +75,8 @@ import { ListClientAllocationSnapshots } from '@/application/use-cases/ListClien
 
 // --- Casos de uso: History ---
 import { ListSimulationVersionsByClient } from '@/application/use-cases/ListSimulationVersionsByClient'
+import { ListLatestSimulationVersionsByClient } from '@/application/use-cases/ListLatestSimulationVersionsByClient'
+import { ListRealizedPatrimonyByClient } from '@/application/use-cases/ListRealizedPatrimonyByClient'
 
 // --- Controllers ---
 import { AllocationController } from './infrastructure/http/controllers/AllocationController';
@@ -152,6 +154,7 @@ import { ListClientAllocationSnapshotsWithLog } from '@/application/use-cases/de
 
 // --- Decorators: History ---
 import { ListSimulationVersionsByClientWithLog } from '@/application/use-cases/decorators/ListSimulationVersionsByClientWithLog'
+import { ListLatestSimulationVersionsByClientWithLog } from '@/application/use-cases/decorators/ListLatestSimulationVersionsByClientWithLog'
 
 
 
@@ -322,9 +325,20 @@ const listClientAllocationSnapshotsUseCase = new ListClientAllocationSnapshotsWi
 
 // 9. Casos de uso: History (base, sem log)
 const listSimulationVersionsByClientBase = new ListSimulationVersionsByClient(historiesRepository)
+const listLatestSimulationVersionsByClientBase = new ListLatestSimulationVersionsByClient(historiesRepository)
+const listRealizedPatrimonyByClientBase = new ListRealizedPatrimonyByClient(
+  allocationSnapshotsRepository,
+  allocationSnapshotItemsRepository,
+  clientRepository,
+)
 
 // 9.1. Casos de uso: History (decorados, com log)
 const listSimulationVersionsByClientUseCase = new ListSimulationVersionsByClientWithLog(listSimulationVersionsByClientBase, logger)
+const listLatestSimulationVersionsByClientUseCase = new ListLatestSimulationVersionsByClientWithLog(
+  listLatestSimulationVersionsByClientBase,
+  logger,
+)
+const listRealizedPatrimonyByClientUseCase = listRealizedPatrimonyByClientBase
 
 // 10. Controllers
 const allocationController = new AllocationController(
@@ -382,6 +396,9 @@ const allocationSnapshotController = new AllocationSnapshotController(
 
 const historyController = new HistoryController(
   listSimulationVersionsByClientUseCase,
+  listLatestSimulationVersionsByClientUseCase,
+  getSimulationVersionUseCase,
+  listRealizedPatrimonyByClientUseCase,
   logger,
 )
 

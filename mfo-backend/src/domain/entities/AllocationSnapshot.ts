@@ -4,6 +4,11 @@ interface AllocationSnapshotProps {
   clientId: string;
   date: Date;
   totalValue: number;
+  // Adicione as novas propriedades aqui, tornando-as opcionais se for o caso
+  financialValue?: number; // Adicionado
+  immobilizedValue?: number; // Adicionado
+  monthlyInterestRate?: number; // Adicionado
+  monthlyInflationRate?: number; // Adicionado
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -13,6 +18,11 @@ export class AllocationSnapshot {
   private _clientId: string;
   private _date: Date;
   private _totalValue: number;
+  // Declare as novas propriedades como privadas na classe
+  private _financialValue: number | undefined; // Adicionado
+  private _immobilizedValue: number | undefined; // Adicionado
+  private _monthlyInterestRate: number | undefined; // Adicionado
+  private _monthlyInflationRate: number | undefined; // Adicionado
   private _createdAt: Date;
   private _updatedAt: Date | undefined;
 
@@ -21,6 +31,11 @@ export class AllocationSnapshot {
     this._clientId = props.clientId;
     this._date = props.date;
     this._totalValue = props.totalValue;
+    // Inicialize as novas propriedades com os valores de props
+    this._financialValue = props.financialValue; // Adicionado
+    this._immobilizedValue = props.immobilizedValue; // Adicionado
+    this._monthlyInterestRate = props.monthlyInterestRate; // Adicionado
+    this._monthlyInflationRate = props.monthlyInflationRate; // Adicionado
     this._createdAt = props.createdAt || new Date();
     this._updatedAt = props.updatedAt;
 
@@ -34,6 +49,7 @@ export class AllocationSnapshot {
     if (this._totalValue < 0) {
       throw new Error('AllocationSnapshot total value cannot be negative.');
     }
+    // Você pode adicionar validações para as novas propriedades aqui se necessário
   }
 
   public static create(props: AllocationSnapshotProps): AllocationSnapshot {
@@ -45,6 +61,11 @@ export class AllocationSnapshot {
   get clientId(): string { return this._clientId; }
   get date(): Date { return this._date; }
   get totalValue(): number { return this._totalValue; }
+  // Adicione os getters para as novas propriedades
+  get financialValue(): number | undefined { return this._financialValue; } // Adicionado
+  get immobilizedValue(): number | undefined { return this._immobilizedValue; } // Adicionado
+  get monthlyInterestRate(): number | undefined { return this._monthlyInterestRate; } // Adicionado
+  get monthlyInflationRate(): number | undefined { return this._monthlyInflationRate; } // Adicionado
   get createdAt(): Date { return this._createdAt; }
   get updatedAt(): Date | undefined { return this._updatedAt; }
 
@@ -64,4 +85,14 @@ export class AllocationSnapshot {
     this._date = newDate;
     this._updatedAt = new Date();
   }
+
+  // Você pode adicionar métodos para atualizar as novas propriedades aqui, se necessário
+  public updateFinancialValue(newValue: number): void {
+    if (newValue < 0) {
+      throw new Error('Financial value cannot be negative.');
+    }
+    this._financialValue = newValue;
+    this._updatedAt = new Date();
+  }
+  // ... e assim por diante para as outras propriedades
 }

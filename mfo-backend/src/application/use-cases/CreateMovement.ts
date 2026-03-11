@@ -19,19 +19,20 @@ export class CreateMovement {
 
     const isRecurrent = input.frequency === 'MONTHLY' || input.frequency === 'YEARLY'
 
-    const movement = new Movement(
-      randomUUID(),
-      input.clientId,
-      input.name,
-      input.type,
-      input.value,
-      new Date(input.startDate),
-      input.frequency,
+    const movement = Movement.create({
+      id: randomUUID(),
+      clientId: input.clientId,
+      name: input.name,
+      type: input.type,
+      value: input.value,
+      startDate: new Date(input.startDate),
+      endDate: input.endDate ? new Date(input.endDate) : null,
+      frequency: input.frequency,
       isRecurrent,
-      input.isIndexed ?? false,
-      input.endDate ? new Date(input.endDate) : null,
-      input.indexationRate ?? null,
-    )
+      isIndexed: input.isIndexed ?? false,
+      indexationRate: input.indexationRate ?? null,
+      createdAt: new Date(),
+    })
 
     const created = await this.movementsRepository.create(movement)
 

@@ -11,9 +11,9 @@ interface SimulationProps {
   inflation: number
   lifeStatus: LifeStatus
   version: number
-  scenario?: string
-  endDate?: Date
-  retirementAge?: number
+  scenario?: string | null
+  endDate?: Date | null
+  retirementAge?: number | null
   isActive?: boolean
   createdAt?: Date
   updatedAt?: Date | null
@@ -28,12 +28,12 @@ export class Simulation {
   private _inflation: number
   private _lifeStatus: LifeStatus
   private _version: number
-  private _scenario?: string
-  private _endDate?: Date
-  private _retirementAge?: number
+  private _scenario?: string | null
+  private _endDate?: Date | null
+  private _retirementAge?: number | null
   private _isActive?: boolean
   private _createdAt: Date
-  private _updatedAt?: Date | null
+  private _updatedAt: Date | null
 
   private constructor(props: SimulationProps) {
     this._id = props.id || crypto.randomUUID()
@@ -44,12 +44,12 @@ export class Simulation {
     this._inflation = props.inflation
     this._lifeStatus = props.lifeStatus
     this._version = props.version || 1
-    this._scenario = props.scenario
-    this._endDate = props.endDate
-    this._retirementAge = props.retirementAge
+    this._scenario = props.scenario ?? null
+    this._endDate = props.endDate ?? null
+    this._retirementAge = props.retirementAge ?? null
     this._isActive = props.isActive ?? true
     this._createdAt = props.createdAt || new Date()
-    this._updatedAt = props.updatedAt
+    this._updatedAt = props.updatedAt ?? null
 
     // Validações iniciais
     if (!this._clientId) {
@@ -85,9 +85,9 @@ export class Simulation {
   get inflation(): number { return this._inflation }
   get lifeStatus(): LifeStatus { return this._lifeStatus }
   get version(): number { return this._version }
-  get scenario(): string | undefined { return this._scenario }
-  get endDate(): Date | undefined { return this._endDate }
-  get retirementAge(): number | undefined { return this._retirementAge }
+  get scenario(): string | null { return this._scenario ?? null }
+  get endDate(): Date | null { return this._endDate ?? null }
+  get retirementAge(): number | null { return this._retirementAge ?? null }
   get isActive(): boolean | undefined { return this._isActive }
   get createdAt(): Date { return this._createdAt }
   get updatedAt(): Date | null | undefined { return this._updatedAt }
