@@ -77,6 +77,8 @@ import { ListClientAllocationSnapshots } from '@/application/use-cases/ListClien
 import { ListSimulationVersionsByClient } from '@/application/use-cases/ListSimulationVersionsByClient'
 import { ListLatestSimulationVersionsByClient } from '@/application/use-cases/ListLatestSimulationVersionsByClient'
 import { ListRealizedPatrimonyByClient } from '@/application/use-cases/ListRealizedPatrimonyByClient'
+import { GetSimulationVersionById } from '@/application/use-cases/GetSimulationVersionById'
+import { GetSimulationVersion } from '@/application/use-cases/GetSimulationVersion'
 
 // --- Controllers ---
 import { AllocationController } from './infrastructure/http/controllers/AllocationController';
@@ -339,6 +341,8 @@ const listLatestSimulationVersionsByClientUseCase = new ListLatestSimulationVers
   logger,
 )
 const listRealizedPatrimonyByClientUseCase = listRealizedPatrimonyByClientBase
+const getSimulationVersionBase = new GetSimulationVersion(simulationsRepository)
+const getSimulationVersionUseCase = new GetSimulationVersionWithLog(getSimulationVersionBase, logger)
 
 // 10. Controllers
 const allocationController = new AllocationController(
