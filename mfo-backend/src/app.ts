@@ -78,7 +78,8 @@ import { ListSimulationVersionsByClient } from '@/application/use-cases/ListSimu
 import { ListLatestSimulationVersionsByClient } from '@/application/use-cases/ListLatestSimulationVersionsByClient'
 import { ListRealizedPatrimonyByClient } from '@/application/use-cases/ListRealizedPatrimonyByClient'
 import { GetSimulationVersionById } from '@/application/use-cases/GetSimulationVersionById'
-import { GetSimulationVersion } from '@/application/use-cases/GetSimulationVersion'
+//import { GetSimulationVersion } from '@/application/use-cases/GetSimulationVersion'
+import { GetSimulationVersionWithLog } from '@/application/use-cases/decorators/GetSimulationVersionWithLog'
 
 // --- Controllers ---
 import { AllocationController } from './infrastructure/http/controllers/AllocationController';
@@ -334,6 +335,7 @@ const listRealizedPatrimonyByClientBase = new ListRealizedPatrimonyByClient(
   clientRepository,
 )
 
+
 // 9.1. Casos de uso: History (decorados, com log)
 const listSimulationVersionsByClientUseCase = new ListSimulationVersionsByClientWithLog(listSimulationVersionsByClientBase, logger)
 const listLatestSimulationVersionsByClientUseCase = new ListLatestSimulationVersionsByClientWithLog(
@@ -341,7 +343,7 @@ const listLatestSimulationVersionsByClientUseCase = new ListLatestSimulationVers
   logger,
 )
 const listRealizedPatrimonyByClientUseCase = listRealizedPatrimonyByClientBase
-const getSimulationVersionBase = new GetSimulationVersion(simulationsRepository)
+const getSimulationVersionBase = new GetSimulationVersionById(historiesRepository)
 const getSimulationVersionUseCase = new GetSimulationVersionWithLog(getSimulationVersionBase, logger)
 
 // 10. Controllers
