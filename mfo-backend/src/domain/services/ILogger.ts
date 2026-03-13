@@ -1,6 +1,8 @@
 // src/domain/services/ILogger.ts
 
 export interface ILogger {
-  info(message: string): void;
-  error(message: string, error?: unknown): void;
+  log(message: string, data?: any): void
+  error(message: string, error?: any): void
+  warn(message: string, data?: any): void
+  debug(message: string, data?: any): void
 }

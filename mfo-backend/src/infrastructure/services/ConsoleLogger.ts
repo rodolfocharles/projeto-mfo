@@ -3,11 +3,19 @@
 import { ILogger } from '../../domain/services/ILogger';
 
 export class ConsoleLogger implements ILogger {
-  info(message: string): void {
-    console.log(`[INFO] ${new Date().toISOString()} — ${message}`);
+  log(message: string, data?: any): void {
+    console.log(`[LOG] ${message}`, data || '')
   }
 
-  error(message: string, error?: unknown): void {
-    console.error(`[ERROR] ${new Date().toISOString()} — ${message}`, error ?? '');
+  error(message: string, error?: any): void {
+    console.error(`[ERROR] ${message}`, error || '')
+  }
+
+  warn(message: string, data?: any): void {
+    console.warn(`[WARN] ${message}`, data || '')
+  }
+
+  debug(message: string, data?: any): void {
+    console.debug(`[DEBUG] ${message}`, data || '')
   }
 }

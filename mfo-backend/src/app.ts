@@ -17,7 +17,7 @@ import { PrismaClientRepository } from './infrastructure/database/prisma/PrismaC
 import { PrismaMovementsRepository } from './infrastructure/database/prisma/PrismaMovementsRepository';
 import { PrismaInsurancesRepository } from '@/infrastructure/database/prisma/PrismaInsurancesRepository'
 import { PrismaSimulationsRepository } from '@/infrastructure/database/prisma/PrismaSimulationsRepository'
-import { PrismaAllocationSnapshotsRepository } from '@/infrastructure/database/prisma/PrismaAllocationSnapshotsRepository'
+import { PrismaSnapshotsRepository } from '@/infrastructure/repositories/PrismaSnapshotsRepository'
 import { PrismaAllocationSnapshotItemsRepository } from '@/infrastructure/database/prisma/PrismaAllocationSnapshotItemsRepository'
 import { PrismaHistoriesRepository } from '@/infrastructure/database/prisma/PrismaHistoriesRepository'
 
@@ -81,6 +81,16 @@ import { GetSimulationVersionById } from '@/application/use-cases/GetSimulationV
 //import { GetSimulationVersion } from '@/application/use-cases/GetSimulationVersion'
 import { GetSimulationVersionWithLog } from '@/application/use-cases/decorators/GetSimulationVersionWithLog'
 
+// --- Casos de uso: Snapshot ---
+import { CreateSnapshot } from '@/application/use-cases/CreateSnapshot'
+import { GetSnapshotById } from '@/application/use-cases/GetSnapshotById'
+import { ListClientSnapshots } from '@/application/use-cases/ListClientSnapshots'
+import { UpdateSnapshot } from '@/application/use-cases/UpdateSnapshot'
+import { DeleteSnapshot } from '@/application/use-cases/DeleteSnapshot'
+
+import { SnapshotController } from '@/infrastructure/http/controllers/SnapshotController'
+
+
 // --- Controllers ---
 import { AllocationController } from './infrastructure/http/controllers/AllocationController';
 import { ClientController } from './infrastructure/http/controllers/ClientController';
@@ -90,15 +100,6 @@ import { SimulationController } from '@/infrastructure/http/controllers/Simulati
 import { AllocationSnapshotController } from '@/infrastructure/http/controllers/AllocationSnapshotController';
 import { HistoryController } from '@/infrastructure/http/controllers/HistoryController';import { AuthController } from './infrastructure/http/controllers/AuthController';
 
-// rotas ddd
-import { allocationsRoutes } from './infrastructure/http/routes/allocations.routes';
-import { clientsRoutes } from './infrastructure/http/routes/clients.routes';
-import { movementsRoutes } from './infrastructure/http/routes/movements.routes';
-import { insurancesRoutes } from '@/infrastructure/http/routes/insurances.routes';
-import { simulationsRoutes } from '@/infrastructure/http/routes/simulations.routes';
-import { allocationSnapshotRoutes } from '@/infrastructure/http/routes/allocation-snapshot.routes';
-import { historyRoutes } from '@/infrastructure/http/routes/history.routes';
-import { authRoutes } from './infrastructure/http/routes/auth.routes';
 // --- Rotas DDD ---
 import { allocationsRoutes } from './infrastructure/http/routes/allocations.routes';
 import { clientsRoutes } from './infrastructure/http/routes/clients.routes';
@@ -107,13 +108,8 @@ import { insurancesRoutes } from '@/infrastructure/http/routes/insurances.routes
 import { simulationsRoutes } from '@/infrastructure/http/routes/simulations.routes';
 import { allocationSnapshotRoutes } from '@/infrastructure/http/routes/allocation-snapshot.routes';
 import { historyRoutes } from '@/infrastructure/http/routes/history.routes';
-
-// --- Rotas legadas ---
-// import { simulationsRoutes } from './routes/simulations';
-// import { allocationSnapshotRoutes } from './routes/allocation-snapshots';
-// import { movementRoutes } from './routes/movements';
-// import { insuranceRoutes } from './routes/insurances';
-// import { historyRoutes } from './routes/history';
+import { authRoutes } from './infrastructure/http/routes/auth.routes';
+import { snapshotsRoutes } from '@/infrastructure/http/routes/snapshots.routes'
 
 // --- Logger ---
 import { ConsoleLogger } from './infrastructure/services/ConsoleLogger';
@@ -149,6 +145,7 @@ import { DeleteSimulationWithLog } from '@/application/use-cases/decorators/Dele
 import { CreateSimulationVersionWithLog } from '@/application/use-cases/decorators/CreateSimulationVersionWithLog'
 import { GetProjectionWithLog } from '@/application/use-cases/decorators/GetProjectionWithLog'
 import { CompareSimulationsWithLog } from '@/application/use-cases/decorators/CompareSimulationsWithLog'
+import { CreateSnapshotWithLog } from '@/application/use-cases/decorators/CreateSnapshotWithLog'
 
 // --- Decorators: AllocationSnapshot ---
 import { CreateAllocationSnapshotWithLog } from '@/application/use-cases/decorators/CreateAllocationSnapshotWithLog'
@@ -213,6 +210,7 @@ app.get('/health', async () => ({ ok: true }));
 // +++++++++++++++++++++++++++++++++++++++
 import { AuthenticateClient } from './application/use-cases/AuthenticateClient';
 import { AuthController } from './infrastructure/http/controllers/AuthController';
+import { PrismaAllocationSnapshotsRepository } from './infrastructure/repositories/PrismaAllocationSnapshotsRepository';
 
 
 // 0. Logger
@@ -227,10 +225,11 @@ const clientRepository = new PrismaClientRepository();
 const movementsRepository = new PrismaMovementsRepository()
 const insurancesRepository = new PrismaInsurancesRepository()
 const simulationsRepository = new PrismaSimulationsRepository()
+const snapshotsRepository = new PrismaSnapshotsRepository() // ← Certifique-se que está aqui
+const allocationSnapshotItemsRepository = new PrismaAllocationSnapshotItemsRepository() // ← Certifique-se que está aqui
 const allocationSnapshotsRepository = new PrismaAllocationSnapshotsRepository()
-const allocationSnapshotItemsRepository = new PrismaAllocationSnapshotItemsRepository()
 const historiesRepository = new PrismaHistoriesRepository()
-const projectionService = new ProjectionService(movementsRepository, insurancesRepository, allocationSnapshotsRepository as any, clientRepository, simulationsRepository)
+const projectionService = new ProjectionService(movementsRepository, insurancesRepository, snapshotsRepository, clientRepository, simulationsRepository)
 
 // 2.1. use-case específico de autenticação
 const authenticateClientBase = new AuthenticateClient(clientRepository, hashService);
@@ -346,7 +345,18 @@ const listRealizedPatrimonyByClientUseCase = listRealizedPatrimonyByClientBase
 const getSimulationVersionBase = new GetSimulationVersionById(historiesRepository)
 const getSimulationVersionUseCase = new GetSimulationVersionWithLog(getSimulationVersionBase, logger)
 
-// 10. Controllers
+
+// 10. Casos de uso: Snapshot (base, sem log)
+const createSnapshotBase = new CreateSnapshot(snapshotsRepository, clientRepository)
+const getSnapshotByIdBase = new GetSnapshotById(snapshotsRepository)
+const listClientSnapshotsBase = new ListClientSnapshots(snapshotsRepository, clientRepository)
+const updateSnapshotBase = new UpdateSnapshot(snapshotsRepository)
+const deleteSnapshotBase = new DeleteSnapshot(snapshotsRepository)
+
+// 10.1. Casos de uso: Snapshot (decorados, com log)
+const createSnapshotUseCase = new CreateSnapshotWithLog(createSnapshotBase, logger)
+
+// 11. Controllers
 const allocationController = new AllocationController(
   createAllocationUseCase,
   listClientAllocationsUseCase,
@@ -408,6 +418,15 @@ const historyController = new HistoryController(
   logger,
 )
 
+const snapshotController = new SnapshotController(
+  createSnapshotUseCase,
+  getSnapshotByIdBase,
+  listClientSnapshotsBase,
+  updateSnapshotBase,
+  deleteSnapshotBase,
+  logger,
+)
+
 // -------------------------------------------------------
 // Rotas DDD
 // -------------------------------------------------------
@@ -424,6 +443,10 @@ app.addHook('preHandler', async (req, reply) => {
   const openPaths: Array<{method: string; path: string}> = [
     { method: 'POST', path: '/api/auth/login' },
     { method: 'POST', path: '/api/clients' },
+    { method: 'POST', path: '/api/snapshots' },      // ← Adicione esta linha
+    { method: 'GET', path: '/api/snapshots' },       // ← E esta também
+    { method: 'PUT', path: '/api/snapshots' },       // ← E esta
+    { method: 'DELETE', path: '/api/snapshots' },
   ];
 
   // rota corrente (com prefixo) e método
@@ -446,6 +469,7 @@ app.register(async (fastifyInstance) => {
   await insurancesRoutes(fastifyInstance, insuranceController);
   await simulationsRoutes(fastifyInstance, simulationController);
   await allocationSnapshotRoutes(fastifyInstance, allocationSnapshotController);
+  await snapshotsRoutes(fastifyInstance, snapshotController);
   await historyRoutes(fastifyInstance, historyController);
   // adição de authRoutes também dentro do mesmo grupo, mas já foi aberto
   // pelo hook; fica seguro registrar aqui após definição de controller

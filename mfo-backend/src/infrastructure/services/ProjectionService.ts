@@ -46,13 +46,14 @@ export class ProjectionService implements IProjectionService {
     }
 
     // Valores iniciais do snapshot
-    let currentFinancialValue = latestSnapshot.financialValue ?? 0
-    let currentImmobilizedValue = latestSnapshot.immobilizedValue ?? 0
+    let currentFinancialValue = latestSnapshot.financialTotal ?? 0
+    let currentImmobilizedValue = latestSnapshot.immobilizedTotal ?? 0
     let currentTotalNoInsValue = currentFinancialValue + currentImmobilizedValue
 
-    // Taxas do snapshot
-    const monthlyInterestRate = (latestSnapshot.monthlyInterestRate ?? 0) / 100
-    const monthlyInflationRate = (latestSnapshot.monthlyInflationRate ?? 0) / 100
+    // Para as taxas, você pode precisar buscar de outro lugar ou usar valores padrão
+    // Ajuste conforme necessário
+    const monthlyInterestRate = 0.005 // 0.5% ao mês (ajuste conforme necessário)
+    const monthlyInflationRate = 0.004 // 0.4% ao mês (ajuste conforme necessário)
 
     // Buscar cliente para data de nascimento
     const client = await this.clientRepository.findById(simulation.clientId)
@@ -77,14 +78,11 @@ export class ProjectionService implements IProjectionService {
       const currentMonth = currentPeriod.getMonth() + 1
 
       // Calcular idade
-      let age: number | undefined; // Declare 'age' para aceitar undefined
+      let age: number | undefined
       if (client.birthDate) {
-        age = Calculator.calculateAge(client.birthDate, currentPeriod);
+        age = Calculator.calculateAge(client.birthDate, currentPeriod)
       } else {
-        // Se client.birthDate for undefined, você precisa decidir o que fazer.
-        // Por exemplo, pode definir uma idade padrão (ex: 0), ou deixar como undefined.
-        // Por enquanto, vamos deixar como undefined.
-        age = undefined; // Ou 0, ou alguma outra lógica padrão para clientes sem data de nascimento
+        age = undefined
       }
 
       // Filtrar movimentações ativas e aplicar inflação
@@ -97,28 +95,28 @@ export class ProjectionService implements IProjectionService {
 
       // Filtrar seguros ativos e aplicar inflação
       const activeInsurances: Insurance[] = insurances
-      .filter((ins: Insurance) => Calculator.isInsuranceActive(ins, currentPeriod))
-      .map((ins: Insurance) => {
-        console.log('Insurance being processed:', {
-          id: ins.id,
-          name: ins.name,
-          nameLength: ins.name?.length,
-          nameType: typeof ins.name,
-        });
+        .filter((ins: Insurance) => Calculator.isInsuranceActive(ins, currentPeriod))
+        .map((ins: Insurance) => {
+          console.log('Insurance being processed:', {
+            id: ins.id,
+            name: ins.name,
+            nameLength: ins.name?.length,
+            nameType: typeof ins.name,
+          })
 
-        return Insurance.create({
-          id: ins.id,
-          clientId: ins.clientId,
-          type: ins.type,
-          name: ins.name,
-          startDate: ins.startDate,
-          endDate: ins.endDate === undefined ? null : ins.endDate,
-          createdAt: ins.createdAt,
-          updatedAt: ins.updatedAt,
-          premium: Calculator.applyInflation(ins.premium, monthlyInflationRate, i),
-          coverage: Calculator.applyInflation(ins.coverage, monthlyInflationRate, i),
-        });
-      });
+          return Insurance.create({
+            id: ins.id,
+            clientId: ins.clientId,
+            type: ins.type,
+            name: ins.name,
+            startDate: ins.startDate,
+            endDate: ins.endDate === undefined ? null : ins.endDate,
+            createdAt: ins.createdAt,
+            updatedAt: ins.updatedAt,
+            premium: Calculator.applyInflation(ins.premium ?? 0, monthlyInflationRate, i),
+            coverage: Calculator.applyInflation(ins.coverage ?? 0, monthlyInflationRate, i),
+          })
+        })
 
       // Calcular receitas e despesas
       let income = 0
@@ -197,7 +195,7 @@ export class ProjectionService implements IProjectionService {
         insurancePremiumPaid: Math.round(premiumsToPay * 100) / 100,
         insuranceValueReceived,
         totalInsuranceValue: activeInsurances.reduce(
-          (sum, ins) => sum + ins.coverage,
+          (sum, ins) => sum + (ins.coverage ?? 0),
           0,
         ),
       })

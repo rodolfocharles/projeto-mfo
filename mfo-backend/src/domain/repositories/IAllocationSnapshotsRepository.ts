@@ -28,7 +28,9 @@ export interface IAllocationSnapshotsRepository {
    * @param snapshot A entidade AllocationSnapshot com os dados atualizados.
    * @returns Uma Promise que resolve para o snapshot atualizado.
    */
-  update(snapshot: AllocationSnapshot): Promise<AllocationSnapshot>;
+  update(id: string, snapshot: Partial<AllocationSnapshot>): Promise<AllocationSnapshot>
+
+  findLatestByClientId(clientId: string): Promise<AllocationSnapshot | null>
 
   /**
    * Deleta um snapshot pelo seu ID.
