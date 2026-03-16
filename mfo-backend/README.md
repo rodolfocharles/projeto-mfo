@@ -1,98 +1,151 @@
 # MFO Backend - API RESTful
 
-Este é o repositório do backend do projeto Gerenciador Financeiro Otimizado (MFO). Ele é construído com **Fastify**, **Prisma ORM** e **TypeScript**, fornecendo uma API RESTful robusta e performática para gerenciar clientes, alocações, simulações e projeções financeiras.
+Este é o repositório do backend do projeto **Gerenciador Financeiro Otimizado (MFO)**.
+Construído com **Fastify**, **Prisma ORM** e **TypeScript**, fornece uma API REST modular
+para gerenciar clientes, alocações, movimentos, seguros, simulações e projeções.
 
 ## 📋 Sumário
 
-1.  [Tecnologias Utilizadas](#1-tecnologias-utilizadas)
-2.  [Arquitetura Geral](#2-arquitetura-geral)
-3.  [Decisões Importantes de Design e Implementação](#3-decisões-importantes-de-design-e-implementação)
-4.  [Configuração do Ambiente e Execução](#4-configuração-do-ambiente-e-execução)
-    *   [Pré-requisitos](#pré-requisitos)
-    *   [Variáveis de Ambiente](#variáveis-de-ambiente)
-    *   [Instalação de Dependências](#instalação-de-dependências)
-    *   [Migrações do Banco de Dados](#migrações-do-banco-de-dados)
-    *   [Como Rodar o Backend (Desenvolvimento)](#como-rodar-o-backend-desenvolvimento)
-    *   [Como Rodar o Backend (Produção)](#como-rodar-o-backend-produção)
-5.  [Testes Automatizados](#5-testes-automatizados)
-6.  **[Dockerfile](#6-dockerfile)**  <-- **Atualizado**
-7.  [Estrutura de Rotas da API](#7-estrutura-de-rotas-da-api)
+1. [Tecnologias Utilizadas](#1-tecnologias-utilizadas)  
+2. [Arquitetura e padrões de design](#2-arquitetura-e-padr%C3%B5es-de-design)  
+3. [Configuração e execução](#3-configura%C3%A7%C3%A3o-e-execu%C3%A7%C3%A3o)  
+    * Pré‑requisitos  
+    * Variáveis de ambiente  
+    * Instalação  
+    * Migrações  
+    * Desenvolvimento / Produção  
+4. [Testes](#4-testes)  
+5. [Dockerfile](#5-dockerfile)  
+6. [Estrutura de rotas da API](#6-estrutura-de-rotas-da-api)  
+7. [Notas rápidas](#7-notas-r%C3%A1pidas)
 
 ---
 
 ## 1. Tecnologias Utilizadas
 
-*   **Framework Web:** [Fastify](https://www.fastify.io/) - Framework web de alta performance focado em velocidade e baixo overhead.
-*   **ORM (Object-Relational Mapper):** [Prisma](https://www.prisma.io/) - ORM moderno com tipagem segura para interagir com o banco de dados.
-*   **Linguagem:** [TypeScript](https://www.typescriptlang.org/) - Superset tipado de JavaScript para maior segurança e manutenibilidade do código.
-*   **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) - Sistema de gerenciamento de banco de dados relacional robusto e de código aberto.
-*   **Validação de Dados:** [Zod](https://zod.dev/) - Biblioteca de validação de schema em tempo de execução e inferência de tipos.
-*   **Autenticação:** [JWT (JSON Web Tokens)](https://jwt.io/) - Padrão para criação de tokens de acesso seguros.
-*   **Testes:** [Vitest](https://vitest.dev/) (ou Jest, dependendo da sua escolha) - Framework de testes rápido e configurável.
-*   **Containerização:** [Docker](https://www.docker.com/) - Para empacotar a aplicação e suas dependências em contêineres.
+* **Framework Web:** Fastify – alta performance, plugins e suporte a TypeScript.  
+* **ORM:** Prisma – tipagem segura, migrações e cliente gerado.  
+* **Linguagem:** TypeScript.  
+* **Banco de Dados:** PostgreSQL.  
+* **Validação:** Zod (schemas de entrada e saída).  
+* **Autenticação:** JWT (JSON Web Tokens) – ainda não utilizada no código, mas
+  referência futura.  
+* **Testes:** Vitest/Jest (estrutura pronta, nenhum teste presente hoje).  
+* **Containerização:** Docker (imagem fornecida pelo `Dockerfile`).
 
 ---
 
-## 2. Arquitetura Geral
+## 2. Arquitetura e padrões de design
 
-O backend segue uma arquitetura modular e em camadas, promovendo a separação de responsabilidades e facilitando a manutenção e escalabilidade.
+O código adota princípios de **Domain‑Driven Design (DDD)** e **SOLID**:
 
-*   **`src/app.ts`**:
-    *   Ponto de entrada principal da aplicação Fastify.
-    *   Responsável pela configuração do servidor, registro de plugins (CORS, JWT, etc.) e montagem das rotas da API.
-    *   Orquestra a inicialização do Prisma Client e o disponibiliza para os controllers.
+* `src/domain` contém entidades, value‑objects, interfaces de repositório e serviços.  
+* `src/application/use-cases` abriga os casos de uso – classes enfraquecidas pelo
+  DIP (dependem de abstrações). Decoradores adicionam logs sem modificar lógica.  
+* `src/infrastructure` contém implementações concretas: repositórios Prisma,
+  serviços de hash, projeção e adaptação HTTP.  
+* Controladores e rotas ficam em `infrastructure/http` ou na camada legada
+  `src/routes`.  
+* `src/app.ts` monta o grafo de dependências e configura o servidor Fastify.
 
-*   **`src/controllers/`**:
-    *   Contém a lógica de negócio principal para cada recurso (e.g., `client.controller.ts`, `simulation.controller.ts`, `insurance.controller.ts`).
-    *   Cada controller é uma classe que encapsula os métodos para lidar com as requisições HTTP (CRUD - Create, Read, Update, Delete).
-    *   Interage diretamente com o Prisma Client para realizar operações de banco de dados.
-    *   Valida os dados de entrada usando os schemas Zod antes de processar a lógica.
+Essa separação ajuda a cumprir SOLID:
 
-*   **`src/schemas/`**:
-    *   Define os schemas de validação de entrada (request body/query/params) e saída (response) usando a biblioteca Zod.
-    *   Garante a integridade e o formato correto dos dados que trafegam pela API.
-    *   Permite inferir tipos TypeScript diretamente dos schemas, mantendo a tipagem segura em toda a aplicação.
-    *   Inclui schemas para entidades como `Client`, `Simulation`, `Allocation`, `Insurance`, e schemas utilitários (`common.schema.ts`).
-
-*   **`src/plugins/`**:
-    *   Contém plugins Fastify para funcionalidades transversais, como:
-        *   **Autenticação JWT:** Middleware para proteger rotas e verificar tokens de acesso.
-        *   **CORS (Cross-Origin Resource Sharing):** Configuração para permitir requisições de domínios diferentes (essencial para o frontend).
-
-*   **`src/lib/`**:
-    *   Utilitários e funções auxiliares que podem ser compartilhadas entre diferentes partes do backend.
-    *   Exemplos: funções de hash de senha, formatadores de data, etc.
-
-*   **`prisma/`**:
-    *   Contém o `schema.prisma`, que define o modelo de dados da aplicação e o relacionamento entre as entidades.
-    *   Gerencia as migrações do banco de dados, permitindo evoluir o schema de forma controlada.
+* **SRP:** cada classe tem uma única responsabilidade (controller vs. serviço vs. repo).  
+* **OCP:** os casos de uso podem ser estendidos via decoradores (ex. logging).  
+* **LSP:** implementações substituem abstrações sem alterar comportamento.  
+* **ISP:** interfaces são pequenas e específicas (por recurso).  
+* **DIP:** módulos de alto nível dependem de interfaces, não concretos.
 
 ---
 
-## 3. Decisões Importantes de Design e Implementação
+## 3. Configuração e execução
 
-*   **Fastify para Performance:** A escolha do Fastify foi motivada pela necessidade de uma API de alta performance e baixo overhead. Sua arquitetura de plugins e validação de schema integrada (via `fastify-zod` ou manual) otimiza o processamento de requisições.
-*   **Prisma ORM para Produtividade e Segurança:** O Prisma oferece uma experiência de desenvolvimento superior com tipagem forte, autocompletar e um sistema de migrações robusto. Isso reduz erros em tempo de execução e acelera o desenvolvimento de funcionalidades de banco de dados.
-*   **TypeScript para Manutenibilidade:** A utilização de TypeScript em todo o projeto garante a detecção precoce de erros, melhora a legibilidade do código e facilita a colaboração em equipes, especialmente em projetos de médio a grande porte.
-*   **Zod para Validação Unificada:** Zod é usado para validar todos os dados de entrada e saída da API. Sua capacidade de inferir tipos TypeScript diretamente dos schemas Zod garante que a API e o código estejam sempre sincronizados em termos de estrutura de dados.
-*   **Lógica de Projeção Financeira:**
-    *   A função `calculateProjection` no `simulation.controller.ts` é o coração da funcionalidade de projeção. Ela simula a evolução do patrimônio ao longo do tempo, considerando:
-        *   **Taxa Real de Juros:** Ajustada pela inflação para refletir o ganho real.
-        *   **Movimentos Financeiros:** Entradas e saídas de dinheiro do cliente.
-        *   **Snapshots de Alocação:** O balanço inicial é derivado do último snapshot de alocações do cliente.
-    *   Esta função é projetada para ser flexível, permitindo a futura adição de diferentes cenários (e.g., impacto de seguros, eventos de vida).
-*   **Comparação de Simulações:** A rota `/simulations/compare` utiliza a `calculateProjection` para duas simulações distintas e compara seus resultados mês a mês, fornecendo uma análise detalhada das diferenças entre cenários.
-*   **Autenticação JWT:** Implementada para proteger as rotas da-lo isoladamente (assumindo que o banco de dados esteja disponível) ou como parte do projeto completo via Docker Compose (recomendado para desenvolvimento).
+### Pré‑requisitos
 
-### Pré-requisitos
+* Node.js ≥ 18  
+* npm  
+* PostgreSQL  
+* Docker/Docker‑Compose (opcional)
 
-*   [Node.js](https://nodejs.org/en/) (versão 18 ou superior)
-*   [npm](https://www.npmjs.com/) (gerenciador de pacotes do Node.js)
-*   [Docker Desktop](https://www.docker.com/products/docker-desktop/) (ou Docker Engine e Docker Compose)
+### Variáveis de ambiente
 
-### Variáveis de Ambiente
+Crie `.env` na raiz com pelo menos:
 
-Crie um arquivo `.env` na raiz da pasta `mfo-backend` com as seguintes variáveis:
+```
+DATABASE_URL=postgresql://user:pass@localhost:5432/mfo_db
+PORT=3333
+```
+
+Adicione variáveis extras (JWT_SECRET etc.) conforme o projeto evoluir.
+
+### Instalação de dependências
+
+```bash
+npm install
+```
+
+### Migrações do banco
+
+```bash
+npm run db:migrate       # dev
+npm run migrate:deploy   # produção
+```
+
+### Como rodar
+
+**Desenvolvimento**
+
+```bash
+npm run dev
+```
+
+**Produção**
+
+```bash
+npm run build
+npm start
+```
+
+---
+
+## 4. Testes
+
+Não existem testes automatizados atualmente. O projeto está pronto para
+Vitest ou Jest; recomenda‑se a criação de suites nos diretórios relevantes.
+
+---
+
+## 5. Dockerfile
+
+O `Dockerfile` usa build multi‑stage com Node 20, instala dependências, gera o
+cliente Prisma e copia o código. A imagem final inclui `node_modules` e
+expõe `3333`. O comando padrão é `npm start`.
+
+---
+
+## 6. Estrutura de rotas da API
+
+* `/clients` – CRUD de clientes  
+* `/allocations` – CRUD de alocações  
+* `/movements` – CRUD de movimentos, listagens por cliente e por tipo  
+* `/insurances` – CRUD de seguros  
+* `/simulations` – CRUD de simulações, versões, projeções e comparação  
+* `/history` – rota legada para histórico de processamento  
+* `/allocation-snapshots` – rota legada de snapshots de alocação  
+
+O Swagger está disponível em `/docs`.
+
+---
+
+## 7. Notas rápidas
+
+* A camada “legacy” (`src/routes/*`) coexistiu com a nova estrutura DDD; a intenção
+  é desativá‑la no futuro.  
+* No momento não há autenticação: todas as rotas são públicas.  
+* Lógica de projeção e comparação de simulações reside em `src/services` e nos
+  casos de uso correspondentes.
+
+
 
 ### Swagger
 

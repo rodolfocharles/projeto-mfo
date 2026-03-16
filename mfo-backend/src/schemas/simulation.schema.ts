@@ -11,7 +11,7 @@ import {
 // SEU LifeStatusEnum EXISTENTE
 export const LifeStatusEnum = z.enum(['NORMAL', 'RETIRED', 'DECEASED']);
 // NOVO: Schema para o tipo de cenário de projeção
-export const ProjectionScenarioEnum = z.enum(['VIDA', 'INVALIDEZ', 'NONE']).default('NONE').describe('Cenário de projeção para simular eventos específicos (VIDA, INVALIDEZ, NONE)');
+export const ProjectionScenarioEnum = z.enum(['CURRENT', 'CONSERVATIVE', 'MODERATE', 'AGGRESSIVE', 'CUSTOM']).default('CURRENT').describe('Cenário de investimento (CURRENT, CONSERVATIVE, MODERATE, AGGRESSIVE, CUSTOM)');
 
 
 // SCHEMAS DE REQUEST
@@ -23,7 +23,11 @@ export const CreateSimulationSchema = z.object({
   inflation: z.number().min(0).max(1).describe('Inflação anual (ex: 0.02 para 2%)'),
   lifeStatus: LifeStatusEnum.describe('Status de vida'),
   version: z.number().int().min(1).optional().describe('Versão da simulação (padrão: 1)'),
-})
+  scenario: ProjectionScenarioEnum.optional().describe('Cenário de projeção'),
+  endDate: DateTimeSchema.optional().describe('Data de término opcional'),
+  retirementAge: z.number().int().min(18).max(100).optional().describe('Idade de aposentadoria'),
+  isActive: z.boolean().optional().describe('Se a simulação está ativa'),
+}).strict()
 
 export const UpdateSimulationSchema = z.object({
   name: z.string().min(1).optional().describe('Novo nome'),
@@ -149,11 +153,3 @@ export type CompareSimulationResponse = z.infer<typeof CompareSimulationResponse
 
 export { ErrorResponseSchema }
 
-
-// ✅ Adicione estes logs no final do arquivo
-console.log('--- Debugging simulation.schema.ts ---');
-console.log('LifeStatusEnum:', LifeStatusEnum);
-console.log('ProjectionScenarioEnum:', ProjectionScenarioEnum);
-console.log('ProjectionQuerySchema:', ProjectionQuerySchema);
-console.log('CompareSimulationsQuerySchema:', CompareSimulationsQuerySchema);
-console.log('--- End Debugging simulation.schema.ts ---');

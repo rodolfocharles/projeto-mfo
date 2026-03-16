@@ -2,3 +2,13 @@ node_modules
 # Keep environment variables out of version control
 .env
 /src/generated/prisma
+build
+dist
+.agent/
+.agents/
+.cursor/
+.gemini/
+.github/
+GUIA_POSTMAN.md
+MFO_API_Postman_Collection.json
+POSTMAN_PAYLOADS.md
